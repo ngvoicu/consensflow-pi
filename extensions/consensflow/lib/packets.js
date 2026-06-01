@@ -77,11 +77,3 @@ export async function createPacket(input) {
 export function taskForKind(_kind, baseTask) {
   return String(baseTask ?? "").trim() || "Respond to Gabriel's message.";
 }
-
-export function packetFileName(participant) {
-  return `${participant.id}.packet.md`;
-}
-
-export function safeRunTitle(kind, participant) {
-  return `${kind}-${participant.id}`.replace(/[^a-zA-Z0-9._-]+/g, "-");
-}

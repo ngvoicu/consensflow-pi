@@ -137,7 +137,9 @@ A bare mention or the generic router work too:
 /cf ask @iris What questions should I answer before implementation?
 ```
 
-ConsensFlow intercepts that prompt, verifies there is exactly one participant mention, builds a scoped packet, runs the participant, and displays the answer.
+ConsensFlow intercepts the prompt whenever it names exactly one participant — the `@mention` can be anywhere, so `@zeus hi` and `hi @zeus` are equivalent — builds a scoped packet, runs the participant, and displays the answer. (A stray `@token` that isn't a configured participant, like `@types/node`, is left alone and goes to the Pi lead.)
+
+**The Pi lead can also call a participant itself.** If you ask the lead in plain words — with no `@mention` — to consult someone (e.g. "get Zeus's take on this and apply what makes sense"), it uses its `cf_run_participant` tool to run the participant and fold the answer into its own work. So there are two distinct paths, never overlapping: a typed `@mention` always routes **directly** to that participant; with no mention, the **lead** decides whether to consult one. (This is single-participant orchestration, not fan-out — the lead still asks one at a time.)
 
 ### 3. ConsensFlow builds a scoped packet
 

@@ -13,7 +13,7 @@ import {
   removeParticipant,
   upsertParticipant,
 } from "./consensflow/lib/state.js";
-import { parseOptions, stripMention, tokenize } from "./consensflow/lib/utils.js";
+import { parseOptions, parseParticipantPrompt, slugify, tokenize } from "./consensflow/lib/utils.js";
 import { runNamedParticipant } from "./consensflow/lib/workflows.js";
 
 const EXT = "consensflow";
@@ -25,7 +25,7 @@ export default async function consensflow(pi: ExtensionAPI) {
   });
 
   pi.on("input", async (event, ctx) => {
-    const parsed = parseParticipantPromptText(event.text);
+    const parsed = await parseTypedPrompt(event.text, ctx);
     if (!parsed) return;
     await ensureCfDirs(ctx.cwd);
     await handleParticipantPrompt(parsed, ctx, pi, ctx.signal);
@@ -143,7 +143,8 @@ async function handleCf(args: string, ctx: any, pi: ExtensionAPI) {
     const tokens = tokenize(args);
     if (tokens.length === 0) return await handleStatus(ctx, pi);
 
-    const directPrompt = parseParticipantPromptTokens(tokens);
+    const known = await knownParticipantKeys(ctx.cwd);
+    const directPrompt = parseParticipantPrompt(tokens, known);
     if (directPrompt) return await handleParticipantPrompt(directPrompt, ctx, pi, ctx.signal);
 
     const command = tokens.shift() ?? "status";
@@ -158,7 +159,7 @@ async function handleCf(args: string, ctx: any, pi: ExtensionAPI) {
         return await handleParticipants(tokens, ctx, pi);
       case "ask":
       case "to": {
-        const parsed = parseParticipantPromptTokens(tokens);
+        const parsed = parseParticipantPrompt(tokens, known);
         if (!parsed) throw new Error("Usage: /cf @name <prompt> or /cf ask @name <prompt>");
         return await handleParticipantPrompt(parsed, ctx, pi, ctx.signal);
       }
@@ -309,39 +310,21 @@ function collectHandoff(ctx: any): string {
 
 type ParticipantPrompt = { participant: string; prompt: string; error?: undefined } | { participant?: undefined; prompt?: undefined; error: string };
 
-function parseParticipantPromptText(text: string): ParticipantPrompt | null {
+// Tokenize a typed line and decide whether it addresses one participant. When the line contains
+// any `@token`, load the configured participants so a single non-leading mention (`hi @zeus`)
+// routes only when it names a real participant — a stray `@types/node` is left for the lead.
+async function parseTypedPrompt(text: string, ctx: any): Promise<ParticipantPrompt | null> {
   const trimmed = String(text ?? "").trim();
   if (!trimmed || trimmed.startsWith("/")) return null;
-  return parseParticipantPromptTokens(tokenize(trimmed));
+  const tokens = tokenize(trimmed);
+  if (!tokens.some((token) => token.startsWith("@"))) return null;
+  return parseParticipantPrompt(tokens, await knownParticipantKeys(ctx.cwd));
 }
 
-function parseParticipantPromptTokens(tokens: string[]): ParticipantPrompt | null {
-  if (tokens.length === 0) return null;
-  let targetIndex = -1;
-  let promptStart = 0;
-  const first = tokens[0]?.toLowerCase();
-
-  if (tokens[0]?.startsWith("@")) {
-    targetIndex = 0;
-    promptStart = 1;
-  } else if ((first === "ask" || first === "to") && tokens[1]?.startsWith("@")) {
-    targetIndex = 1;
-    promptStart = 2;
-  }
-
-  if (targetIndex < 0) return null;
-  const extraLeadingMentions = [];
-  for (let index = promptStart; index < tokens.length; index += 1) {
-    if (!tokens[index]?.startsWith("@")) break;
-    extraLeadingMentions.push(stripMention(tokens[index]));
-  }
-  if (extraLeadingMentions.length > 0) {
-    return { error: "ConsensFlow sends to one participant at a time. Use `@zeus ...`, wait for the answer, then ask another participant if needed." };
-  }
-  const participant = stripMention(tokens[targetIndex]);
-  const prompt = tokens.slice(promptStart).join(" ").trim();
-  if (!prompt) return { error: `Prompt is required after @${participant}.` };
-  return { participant, prompt };
+// Slugified ids + names of every configured participant, matching getParticipant's resolution.
+async function knownParticipantKeys(cwd: string): Promise<Set<string>> {
+  const participants = await loadParticipants(cwd).catch(() => []);
+  return new Set((participants as any[]).flatMap((p) => [p.id, slugify(p.name)]).filter(Boolean));
 }
 
 function shouldIncludeLatestChanges(prompt: string) {

@@ -46,7 +46,7 @@ Run artifacts are workspace-local:
   -> answer is shown in Pi
 ```
 
-If multiple leading participants are mentioned, the prompt is rejected. Later quoted/context mentions are allowed so you can paste prior outputs into the next participant's prompt. Gabriel asks one participant, reads the answer, then decides whether to ask another participant or tell the Pi lead what to implement.
+A prompt routes to a participant when it names exactly one — and the `@mention` can be anywhere, so `@zeus hi` and `hi @zeus` behave identically. A leading mention is an explicit address (it wins, and any other `@names` after it are kept as quoted text so you can paste a prior reply into the next prompt); a single mention elsewhere only routes when it matches a configured participant, so a stray `@types/node` in a prompt to the lead is left alone. Multiple leading mentions are rejected, and two different participants named with no leading mention is treated as ambiguous and left to the Pi lead. Gabriel asks one participant, reads the answer, then decides whether to ask another or tell the Pi lead what to implement.
 
 ## Subagent model
 

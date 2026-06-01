@@ -26,10 +26,6 @@ export function stripMention(value) {
   return String(value ?? "").replace(/^@+/, "");
 }
 
-export function displayMention(participant) {
-  return `@${participant.id}`;
-}
-
 export function tokenize(input) {
   const text = String(input ?? "");
   const tokens = [];
@@ -99,21 +95,6 @@ export function parseOptions(tokens) {
   return { positional, flags };
 }
 
-export function splitCsv(value, fallback = []) {
-  if (value === undefined || value === null || value === true) return fallback;
-  const items = String(value)
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  return items.length > 0 ? items : fallback;
-}
-
-export function boolFlag(value) {
-  if (value === true) return true;
-  if (value === false || value === undefined || value === null) return false;
-  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
-}
-
 export function resolveInside(cwd, requested) {
   const root = path.resolve(cwd);
   const resolved = path.resolve(root, requested || ".");
@@ -137,10 +118,43 @@ export function truncateText(text, maxBytes = 128 * 1024) {
   };
 }
 
-export function extractMentions(tokens) {
-  return tokens.filter((token) => token.startsWith("@")).map((token) => stripMention(token));
-}
+const ONE_PARTICIPANT_AT_A_TIME =
+  "ConsensFlow sends to one participant at a time. Use `@zeus ...`, wait for the answer, then ask another participant if needed.";
 
-export function withoutMentions(tokens) {
-  return tokens.filter((token) => !token.startsWith("@"));
+// Decide whether a typed prompt addresses exactly one named participant.
+// - A leading mention (`@zeus ...`, or `ask @zeus ...`) is an explicit address: it routes
+//   regardless of whether the name is configured (an unknown name surfaces a helpful error
+//   downstream), and any other @names later in the prompt are kept verbatim so you can paste a
+//   prior participant's reply into the next prompt.
+// - A single mention elsewhere (`hi @zeus`) routes the same way — but ONLY when it resolves to a
+//   known participant, so a stray `@types/node` / `@Component` in a prompt to the lead is left
+//   alone. `known` is a Set of slugified participant ids/names (matching getParticipant's
+//   resolution); omit it to disable non-leading routing.
+// Returns { participant, prompt } | { error } | null  (null = not a participant prompt).
+export function parseParticipantPrompt(tokens, known) {
+  if (!Array.isArray(tokens) || tokens.length === 0) return null;
+
+  let body = tokens;
+  const first = tokens[0]?.toLowerCase();
+  if ((first === "ask" || first === "to") && tokens[1]?.startsWith("@")) body = tokens.slice(1);
+  if (body.length === 0) return null;
+
+  if (body[0].startsWith("@")) {
+    if (body[1]?.startsWith("@")) return { error: ONE_PARTICIPANT_AT_A_TIME };
+    const participant = stripMention(body[0]);
+    const prompt = body.slice(1).join(" ").trim();
+    if (!prompt) return { error: `Prompt is required after @${participant}.` };
+    return { participant, prompt };
+  }
+
+  const mentions = body.filter((token) => token.startsWith("@"));
+  if (mentions.length === 0) return null;
+  const distinct = new Set(mentions.map((token) => slugify(stripMention(token))));
+  if (distinct.size !== 1) return null; // 2+ different names, none leading -> ambiguous, lead handles
+  const participant = stripMention(mentions[0]);
+  const knownSet = known instanceof Set ? known : null;
+  if (!knownSet || !knownSet.has(slugify(participant))) return null; // unknown @token -> not a target
+  const prompt = body.filter((token) => !token.startsWith("@")).join(" ").trim();
+  if (!prompt) return null;
+  return { participant, prompt };
 }

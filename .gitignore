@@ -1,0 +1,8 @@
+# ConsensFlow run artifacts (regenerated per workspace; see README)
+.consensflow/
+
+# macOS
+.DS_Store
+
+# Node (peer deps come from the host pi install; never vendored here)
+node_modules/

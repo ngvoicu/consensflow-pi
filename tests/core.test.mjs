@@ -9,7 +9,7 @@ import { serializeTranscript } from "../extensions/consensflow/lib/handoff.js";
 import { buildRunnerInvocation, codexSandbox, toolsForPi, normalizeProcessOutput, runParticipant } from "../extensions/consensflow/lib/runners.js";
 import { getParticipant, loadParticipants, removeParticipant, upsertParticipant } from "../extensions/consensflow/lib/state.js";
 import { effectiveToolsPolicy, participantForKind } from "../extensions/consensflow/lib/workflows.js";
-import { parseOptions, slugify, tokenize } from "../extensions/consensflow/lib/utils.js";
+import { parseOptions, parseParticipantPrompt, slugify, tokenize } from "../extensions/consensflow/lib/utils.js";
 
 async function withTempDir(fn) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "cf-pi-test-"));
@@ -285,4 +285,28 @@ test("serializeTranscript surfaces prior ConsensFlow participant exchanges (cros
   assert.match(text, /@iris replied:\nUse a write-through cache\./);
   // The run-metadata noise from the rendered message is not used when structured details exist.
   assert.doesNotMatch(text, /Run: ask-123/);
+});
+
+test("parseParticipantPrompt routes one mention anywhere, and never hijacks stray @tokens", () => {
+  const known = new Set(["zeus", "athena"]);
+  // Leading and trailing single mention are equivalent (the headline fix).
+  assert.deepEqual(parseParticipantPrompt(["@zeus", "hi"], known), { participant: "zeus", prompt: "hi" });
+  assert.deepEqual(parseParticipantPrompt(["hi", "@zeus"], known), { participant: "zeus", prompt: "hi" });
+  assert.deepEqual(parseParticipantPrompt(["summarize", "@zeus", "please"], known), { participant: "zeus", prompt: "summarize please" });
+  // "ask"/"to" verb prefix still addresses a leading participant.
+  assert.deepEqual(parseParticipantPrompt(["ask", "@athena", "review"], known), { participant: "athena", prompt: "review" });
+  // A leading mention wins and later @names stay as quoted text (paste-prior-output intact).
+  assert.deepEqual(parseParticipantPrompt(["@athena", "agree", "with", "@zeus?"], known), { participant: "athena", prompt: "agree with @zeus?" });
+  // Multiple leading mentions are rejected.
+  assert.ok(parseParticipantPrompt(["@zeus", "@athena", "hi"], known)?.error);
+  // A stray non-leading @token that is not a participant goes to the lead, not a subprocess.
+  assert.equal(parseParticipantPrompt(["install", "@types/node", "now"], known), null);
+  // Two different participants, none leading -> ambiguous, lead handles.
+  assert.equal(parseParticipantPrompt(["compare", "@zeus", "and", "@athena"], known), null);
+  // No mention at all.
+  assert.equal(parseParticipantPrompt(["just", "fix", "the", "bug"], known), null);
+  // Leading mention without a prompt errors helpfully.
+  assert.ok(parseParticipantPrompt(["@zeus"], known)?.error);
+  // Without a known-set, a non-leading mention does not route (conservative default).
+  assert.equal(parseParticipantPrompt(["hi", "@zeus"]), null);
 });
