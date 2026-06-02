@@ -6,8 +6,6 @@ import { nowIso, slugify, stripMention } from "./utils.js";
 export const PARTICIPANT_KINDS = ["pi", "claude-code", "codex", "opencode"];
 export const ROLE_VALUES = ["lead", "spec-creator", "reviewer", "implementer", "council", "knowledge"];
 export const TOOL_POLICIES = ["readonly", "workspace-write", "full-auto"];
-export const SESSION_POLICIES = ["ephemeral", "scoped", "persistent"];
-export const CONTEXT_POLICIES = ["task-only", "artifact-focused", "compact-jam", "compact-plus-tail"];
 export const SKILLS_POLICIES = ["default", "none", "explicit"];
 
 export function configRoot() {
@@ -114,8 +112,6 @@ export function normalizeParticipant(input) {
 
   const roles = normalizeList(input.roles, defaultRolesForKind(kind)).filter((role) => ROLE_VALUES.includes(role));
   const toolsPolicy = normalizeEnum(input.toolsPolicy ?? input.tools ?? input.toolPolicy, TOOL_POLICIES, "readonly", "toolsPolicy");
-  const sessionPolicy = normalizeEnum(input.sessionPolicy, SESSION_POLICIES, "ephemeral", "sessionPolicy");
-  const contextPolicy = normalizeEnum(input.contextPolicy, CONTEXT_POLICIES, "artifact-focused", "contextPolicy");
   const skillsPolicy = normalizeEnum(input.skillsPolicy ?? input.skills, SKILLS_POLICIES, "default", "skillsPolicy");
 
   const participant = {
@@ -124,8 +120,6 @@ export function normalizeParticipant(input) {
     kind,
     roles,
     toolsPolicy,
-    sessionPolicy,
-    contextPolicy,
     skillsPolicy,
     createdAt: input.createdAt ?? nowIso(),
     updatedAt: input.updatedAt ?? nowIso(),

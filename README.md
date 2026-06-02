@@ -1,372 +1,248 @@
 # ConsensFlow Pi
 
-Pi-native named-agent prompting for asking **one configured participant at a time**.
-
-ConsensFlow is not a group chat, not a live shared transcript, and not a rigid workflow system. The current Pi session stays the lead. ConsensFlow lets you summon a participant — a preset like `@zeus`/`@athena` or a custom one you defined — with a natural-language prompt, hands it a snapshot of the current session, runs it in an isolated subprocess, saves the result as an artifact, and shows the answer back in Pi.
-
-```text
-@zeus What do you think about this approach?
-@athena Review the latest changes and list blockers only.
-@iris What questions should I answer before implementing this?
-```
+Ask other AI coding agents — **Claude Code, Codex, Pi, OpenCode** — for a second opinion, **one at a time, by name**, without leaving your Pi session.
 
 ---
 
-## Current direction
+## What is it? (the 30-second version)
 
-ConsensFlow Pi is now a lightweight **participant/subagent router**:
+You're coding with **Pi**, your main AI assistant. Sometimes you want another model's take — maybe Claude is sharper on architecture, you want Codex to sanity-check a diff, or a cheap fast model for a quick gut-check.
 
-```text
-Gabriel
-  -> current Pi session as lead
-  -> @participant natural-language prompt
-  -> packet: identity + mode + session handoff + prompt (+ optional git diff)
-  -> isolated participant subprocess (run with its configured tools)
-  -> answer artifact, shown back in Pi
-  -> Gabriel/Pi lead decides what to do next
-```
+ConsensFlow lets you keep a roster of **participants**. A participant is just *one specific AI agent + model* that you've set up and given a name — like `@zeus` or `@athena`. When you want one's opinion, you `@mention` it right in your Pi chat. ConsensFlow then:
 
-Important rules:
+1. packages a snapshot of your current conversation (the **handoff**) plus your question,
+2. runs that agent quietly in the background as a **one-shot**,
+3. and shows you its answer.
 
-- Send to exactly **one** participant at a time.
-- No hidden fan-out. `@zeus @athena ...` is rejected.
-- No hidden workflows. There are no special `review spec`, `implementation review`, `grill`, `council`, or `handoff` commands.
-- Participants do not need to know ConsensFlow vocabulary. They answer the prompt as written.
-- The current Pi session remains the lead and decides what, if anything, to implement.
+Think of it as a panel of advisors on speed-dial. **You stay in charge** (you're "the lead") — they only give input. It is **not** a group chat, not parallel fan-out, not a fixed workflow. One question → one participant → one answer, every time.
+
+The whole idea in five bullets:
+
+- **Participant** = a named *(agent + model)* combo. Configure once, reuse from any project.
+- **One at a time.** `@zeus @athena …` is rejected — ask one, read, then ask the next.
+- **Read-only by default.** A participant can look at your files but not change them, unless you explicitly make it write-capable.
+- **One-shot, but context-aware.** Each call is fresh (no memory of past calls), yet it always receives the current session handoff — *including earlier participants' answers* — so the 2nd agent you ask can build on the 1st.
+- **The lead can ask too.** You can also just tell Pi "get Zeus's take and apply what makes sense," and Pi will call the participant itself.
 
 ---
 
-## Source layout
-
-The active implementation lives at the package root:
+## How it works — the flow, top to bottom
 
 ```text
-consensflow-pi/
-  extensions/consensflow.ts          # extension entry: commands, input routing, tools, packet/handoff wiring
-  extensions/consensflow/lib/        # plain-JS logic (presets, state, packets, handoff, runners, workflows, utils)
-  skills/consensflow/SKILL.md        # skill the Pi lead reads
-  prompts/cf-ask.md                  # /cf-ask prompt template
-  docs/                              # architecture.md, usage.md
-  tests/core.test.mjs                # node --test suite
+You, in your Pi session
+   │   type:  @zeus what's the riskiest part of this design?
+   ▼
+ConsensFlow sees exactly one @mention  →  intercepts the message
+   │
+   ▼
+It builds a "packet" for @zeus:
+   • who @zeus is        (claude-code · claude-opus-4-8 · max · reviewer)
+   • mode line           (read-only — or read-write if you made it write-capable)
+   • handoff             (a snapshot of THIS session + earlier @participant replies)
+   • your question
+   • git status/diff      (only if your prompt mentions "latest changes")
+   ▼
+Runs @zeus as an isolated, one-shot subprocess:
+   claude -p … --model claude-opus-4-8 --effort max   (read-only tools)
+   no memory of past calls, no live access to your session — just the packet
+   ▼
+Saves everything as an artifact:
+   <workspace>/.consensflow/runs/<run-id>/{packet.md, stdout.txt, result.json}
+   ▼
+Shows @zeus's answer back in your Pi session
+   ▼
+You (the lead) decide what to do:
+   ask another participant (it will see this answer) · implement it · ignore it
 ```
+
+That's the entire loop — no hidden steps, no background fan-out.
 
 ---
 
-## Global config vs project artifacts
+## Install
 
-Participant config is **user-level/global**:
+**Prerequisites**
 
-```text
-~/.consensflow/participants.json
+- **Pi** itself (`@earendil-works/pi-coding-agent`) — you already have it if you're reading this.
+- The **CLI for each engine you want to use**, on your `PATH`. You only need the ones you'll actually configure:
+
+  | Engine | CLI |
+  |---|---|
+  | Claude Code | `claude` |
+  | Codex | `codex` |
+  | OpenCode | `opencode` |
+  | Pi | `pi` (already there) |
+
+**Install the extension** (from this folder):
+
+```bash
+cd /path/to/consensflow-pi
+pi install .
 ```
 
-On this machine:
+This registers it in your user-level Pi settings, so it's available in every Pi session. Start a new session (or restart Pi) to load it.
+
+**Verify**
 
 ```text
-/Users/gabrielvoicu/.consensflow/participants.json
+/cf doctor      # shows which engine CLIs are installed and working
+/cf status      # shows your configured participants
 ```
 
-Project-local `.consensflow/` is only for artifacts produced while working in that workspace:
-
-```text
-<workspace>/.consensflow/
-  current.json
-  runs/<run-id>/
-    packet.md
-    stdout.txt
-    stderr.txt
-    result.json
-```
-
-Usually add this to project `.gitignore`:
-
-```text
-.consensflow/
-```
-
-So you configure `@zeus` once globally, then use him from any project.
+**Uninstall** any time with `pi remove .` — your source folder and your participant config are left untouched.
 
 ---
 
-## How it works
+## How to use
 
-### 1. Configure participants
+### Step 1 — Configure a participant
 
-ConsensFlow ships curated presets as convenient starting points, but you are not limited to them: rename a preset, or define a fully custom participant with any kind/model/effort/roles/tools.
+Two ways: start from a **preset** (curated, known-good combos) or define a **custom** one (any engine + any model).
 
-Inspect presets:
+See the presets:
 
 ```text
 /cf participants presets
 ```
 
-Current presets:
+**House team — one strong read-only reviewer per engine:**
 
-| Preset | Mention | Backend/model |
+| Preset | Engine | Model | Effort |
+|---|---|---|---|
+| `@zeus`   | claude-code | `claude-opus-4-8` | max |
+| `@apollo` | claude-code | `claude-opus-4-8` | xhigh |
+| `@athena` | codex | `gpt-5.5` | xhigh |
+| `@iris`   | pi | `openai-codex/gpt-5.5` | thinking xhigh |
+| `@luna`   | opencode | `openrouter/moonshotai/kimi-k2.6` | max |
+
+**Fast/cheap tier — quick gut-checks:**
+
+| Preset | Engine | Model |
 |---|---|---|
-| `zeus` | `@zeus` | Claude Code Opus 4.7 MAX |
-| `apollo` | `@apollo` | Claude Code Opus 4.7 XHIGH |
-| `athena` | `@athena` | Codex GPT 5.5 XHIGH |
-| `iris` | `@iris` | Pi GPT 5.5 XHIGH |
-| `luna` | `@luna` | OpenCode Kimi K2.6 MAX |
+| `@hermod` | claude-code | `claude-haiku-4-5` (low) |
+| `@loki`   | codex | `gpt-5.5` (medium) |
+| `@nike`   | pi | `openrouter/google/gemini-3.5-flash` |
+| `@freya`  | opencode | `openrouter/deepseek/deepseek-v4-flash` |
 
-Add from a preset, rename a preset, or define a custom participant:
+**Model zoo — the same popular OpenRouter models on both engines (Greek names = pi, Norse names = opencode):**
 
-```text
-/cf participants add zeus                     # from a preset
-/cf participants add zeus --name Deepreview   # preset backend, your own name (-> @deepreview, /deepreview)
-/cf participants add all                      # every preset
-/cf participants add --name Builder --kind codex --model gpt-5.5 --effort high \
-    --roles implementer --tools workspace-write   # fully custom, write-capable
-```
-
-For a preset you may override `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description` (backend/model/effort come from the preset). A custom participant accepts the full set: `--kind`, `--model`, `--effort`/`--thinking`, `--roles`, `--tools`, plus the operational fields. Each saved participant gets a dedicated `/<name>` command after `/reload`.
-
-### 2. Talk to one participant directly
-
-Each participant has its own command:
-
-```text
-/zeus What is the riskiest part of this design?
-```
-
-A bare mention or the generic router work too:
-
-```text
-@athena Review the latest changes and tell me only blockers.
-/cf ask @iris What questions should I answer before implementation?
-```
-
-ConsensFlow intercepts the prompt whenever it names exactly one participant — the `@mention` can be anywhere, so `@zeus hi` and `hi @zeus` are equivalent — builds a scoped packet, runs the participant, and displays the answer. (A stray `@token` that isn't a configured participant, like `@types/node`, is left alone and goes to the Pi lead.)
-
-**The Pi lead can also call a participant itself.** If you ask the lead in plain words — with no `@mention` — to consult someone (e.g. "get Zeus's take on this and apply what makes sense"), it uses its `cf_run_participant` tool to run the participant and fold the answer into its own work. So there are two distinct paths, never overlapping: a typed `@mention` always routes **directly** to that participant; with no mention, the **lead** decides whether to consult one. (This is single-participant orchestration, not fan-out — the lead still asks one at a time.)
-
-### 3. ConsensFlow builds a scoped packet
-
-Each run writes:
-
-```text
-.consensflow/runs/<run-id>/packet.md
-```
-
-The packet contains:
-
-- who the participant is (name, kind, model, effort, roles)
-- a mode line — read-only or read-write, from the participant's effective tools policy
-- a handoff: a serialized, size-capped snapshot of the current session — your conversation with the Pi lead **and earlier `@participant` exchanges** (so asking Iris then Luna means Luna sees what Iris answered)
-- Gabriel's prompt
-- optional git status/diff context when your prompt mentions latest changes, diffs, patches, changed files, or implementation
-
-The handoff is a one-shot snapshot built on demand from the session (oldest→newest, capped to keep the most recent tail), embedded in the packet — not a live or shared Pi transcript. There is no forced output format — the participant answers conversationally, like a normal coding session.
-
-> Cross-pollination is intentional (you chose it): later participants build on earlier ones. If you want a deliberately *independent* second opinion, ask that participant first, before others have replied.
-
-### 4. The participant runs as an isolated subagent
-
-Each participant is internally treated like a subagent: isolated process, scoped prompt, explicit tools, no inherited conversation state.
-
-Runner shapes:
-
-| Kind | Runner shape | Notes |
+| Model | via pi | via opencode |
 |---|---|---|
-| `pi` | `pi --mode json --no-session --no-extensions --thinking off -p` by default | Skills stay enabled by default. JSON mode gives cleaner final output/progress parsing. Configure `--thinking high/xhigh` when you want deeper reasoning.
-| `claude-code` | `claude -p --output-format json --no-session-persistence` | Uses allowed tools. |
-| `codex` | `codex exec --json --ephemeral --skip-git-repo-check --ignore-user-config --ignore-rules` | Uses Codex sandbox mode and avoids user config/rules leaking hidden context. |
-| `opencode` | `opencode run --format json --file packet.md` | File-attached packet. |
+| DeepSeek V4 Pro | `@hades` | `@odin` |
+| Gemini 3.1 Pro | `@helios` | `@heimdall` |
+| Grok 4.3 | `@ares` | `@thor` |
+| Qwen3.7 Max | `@hephaestus` | `@tyr` |
+| Llama 4 Maverick | `@pan` | `@vidar` |
+| Mistral Large | `@aeolus` | `@njord` |
+| MiniMax M3 | `@metis` | `@mimir` |
 
-Pi participants deliberately use `--no-extensions` to avoid recursively loading ConsensFlow inside the child process. They do **not** use `--no-skills` by default, so installed Pi skills such as Kluris or Specmint can still be available when useful.
-
-Pi skills policy is set by the preset. `@iris` keeps normal Pi skills enabled.
-
-### 5. The answer becomes an artifact
-
-Every run stores:
+Add one, all, or a renamed copy:
 
 ```text
-.consensflow/runs/<run-id>/
-  packet.md
-  stdout.txt
-  stderr.txt
-  result.json
+/cf participants add zeus                    # add the zeus preset      → @zeus, /zeus
+/cf participants add all                     # add every preset at once
+/cf participants add zeus --name Deepreview  # same engine/model, your name → @deepreview
 ```
 
-The current Pi lead then decides whether to implement all, some, or none of the participant's advice.
+After adding, run `/reload` so each participant gets its own `/<name>` command. (The `@name` form works immediately, no reload needed.)
+
+### Step 2 — Going custom (any other model)
+
+The popular models already ship as presets (the tables above), so usually you just `add` a name. For anything else, define a **custom** participant — model/effort strings pass straight through, so **any identifier the engine accepts works.** One example per variation:
+
+```text
+# A different Claude model (claude-code effort: low | medium | high | max)
+/cf participants add --name Sonnet --kind claude-code --model claude-sonnet-4-6 --effort high
+
+# Any OpenRouter model via Pi (reasoning via --thinking off | low | high | xhigh)
+/cf participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
+
+# A write-capable implementer, not just a reviewer (OpenCode; effort maps to --variant)
+/cf participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.6 \
+    --effort max --roles implementer --tools workspace-write
+```
+
+> **Read-only vs write.** By default a participant is a **reviewer** and can only read. To let one actually edit files and run commands, give it a non-advisory role and a write policy: `--roles implementer --tools workspace-write` (or `full-auto`). Advisory roles (`reviewer` / `council` / `knowledge`) are *always* forced read-only, even if you pass a write flag.
+
+### Step 3 — Ask a participant
+
+Three equivalent ways:
+
+```text
+@zeus What's the riskiest part of this design?            # mention (anywhere in the line)
+/zeus What's the riskiest part of this design?            # dedicated command (after /reload)
+/cf ask @zeus What's the riskiest part of this design?    # generic router
+```
+
+A few real examples:
+
+```text
+@athena Review the latest changes and list only blockers and test gaps.
+@iris What questions should I answer before I start building this?
+@zeus Do you agree with Athena, or push back?     # he'll see Athena's earlier reply in the handoff
+```
+
+- Mention **one** participant. `@zeus @athena …` is rejected on purpose.
+- Say **"latest changes"** (or diff / patch / changed files) and ConsensFlow attaches your `git status` + diff for context.
+- A stray `@something` that isn't a participant (like `@types/node`) is ignored and just goes to your Pi lead.
+
+### Step 4 — Read the answer (and where it's saved)
+
+The reply appears inline in Pi. Every run is also saved under the workspace:
+
+```text
+<workspace>/.consensflow/runs/<run-id>/
+  packet.md      # exactly what the participant was sent
+  stdout.txt     # raw engine output
+  result.json    # parsed answer + metadata
+```
+
+Then you, the lead, decide: implement all of it, some of it, or none.
 
 ---
 
-## Use cases
+## Where config and artifacts live
 
-### Use case 1: simple second opinion
-
-```text
-@zeus What is the riskiest part of this plan?
-```
-
-Good for:
-
-- quick architecture feedback
-- naming/API opinions
-- finding blind spots before coding
-
-### Use case 2: ask for clarifying questions
-
-There is no special "grill" command. Just ask for questions:
-
-```text
-@iris What questions should I answer before implementing this feature?
-```
-
-Good for:
-
-- requirements discovery
-- surfacing hidden product decisions
-- tightening a vague task before coding
-
-### Use case 3: review latest changes
-
-```text
-@athena Review the latest changes and list only blockers, test gaps, and risky assumptions.
-```
-
-Because the prompt says "latest changes", ConsensFlow includes git status/diff context when available.
-
-Good for:
-
-- pre-commit review
-- sanity checking a local diff
-- asking a stronger model to critique current work
-
-### Use case 4: one-at-a-time disagreement
-
-Do not ask multiple participants in one prompt. Ask one, read the answer, then ask another. Because of cross-pollination, the second participant already sees the first one's reply in its handoff — you don't have to relay it by hand:
-
-```text
-@zeus What do you think about using natural-language prompts instead of fixed workflow commands?
-```
-
-Then simply:
-
-```text
-@athena Do you agree with Zeus, or push back?
-```
-
-Athena's handoff already contains Zeus's answer. (If you'd rather Athena form an *independent* view, ask her first, before Zeus replies.)
-
-Good for:
-
-- controlled disagreement and debate
-- avoiding noisy multi-agent fan-out
-- letting Gabriel decide what to forward to the Pi lead
-
-### Use case 5: reviewer-to-lead loop
-
-```text
-@zeus Review the latest changes. If you find issues, write them as concrete instructions for the lead implementer.
-```
-
-Then Gabriel can tell the current Pi lead:
-
-```text
-Implement Zeus's first and third suggestions. Ignore the second because it is out of scope.
-```
-
-Good for:
-
-- using external agents as reviewers only
-- keeping implementation control in the current Pi session
-- selectively applying feedback
-
-### Use case 6: scoped participant for a subdirectory
-
-```text
-/cf participants add athena --cwd gal-frontend
-@athena Review the latest frontend changes and identify test gaps.
-```
-
-The `--cwd` must resolve inside the current workspace; escapes like `../other-project` are rejected before spawning.
-
-Good for:
-
-- large workspaces
-- limiting context
-- making named participants specialize by project area
+- **Participants (global):** `~/.consensflow/participants.json` — set up `@zeus` once, use him from any project.
+- **Run artifacts (per project):** `<workspace>/.consensflow/runs/…` — already in `.gitignore` here.
 
 ---
 
-## Commands
+## Command reference
 
 ```text
-/cf status
-/cf doctor
-/cf participants list
-/cf participants presets
-/cf participants add <preset> [--name <name>] [--cwd subdir] [--timeoutMs ms]
+/cf status                       # your participants + latest run
+/cf doctor                       # which engine CLIs are installed
+/cf participants presets         # list the built-in presets
+/cf participants list            # list configured participants
+/cf participants add <preset> [--name N] [--cwd subdir] [--timeoutMs ms]
 /cf participants add all
-/cf participants add --name <name> --kind <pi|claude-code|codex|opencode> --model <model> [--effort <e>] [--thinking <t>] [--roles <r>] [--tools <readonly|workspace-write|full-auto>] [--cwd subdir]
+/cf participants add --name N --kind <pi|claude-code|codex|opencode> --model M \
+     [--effort e | --thinking t] [--roles r] [--tools readonly|workspace-write|full-auto] [--cwd subdir]
 /cf participants show @name
 /cf participants remove @name
 
-/<name> <natural-language prompt>        # dedicated per-participant command
-@name <natural-language prompt>          # bare mention
-/cf @name <natural-language prompt>      # generic router
-/cf ask @name <natural-language prompt>
+@name <prompt>                   # ask — mention anywhere in the line
+/name <prompt>                   # dedicated command (after /reload)
+/cf @name <prompt>               # generic router
+/cf ask @name <prompt>
 ```
 
-Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--roles`, `--tools`, `--sessionPolicy`, `--contextPolicy`, `--skills`, `--agent`, `--maxTurns`.
-
-Examples:
-
-```text
-/cf participants add all
-/cf participants add zeus
-/cf participants add zeus --name Deepreview
-/cf participants add athena --cwd gal-frontend
-/cf participants add --name Builder --kind codex --model gpt-5.5 --roles implementer --tools workspace-write
-```
+Preset add flags: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`.
+Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thinking`, `--roles`, `--tools`, `--skills`, `--agent`, `--maxTurns`.
 
 ---
 
-## Safety model
+## Good to know
 
-- Participants run with their configured tools policy. A `workspace-write`/`full-auto` participant can edit files and run commands like your main agent.
-- Participants whose roles are purely advisory (`reviewer`/`council`/`knowledge`) are always coerced to read-only — even if a write policy was set. Advisory roles never receive write flags. To get a write-capable participant, give it a non-advisory role (e.g. `--roles implementer`).
-- Multiple participant mentions are rejected to avoid hidden serial/parallel execution.
-- Participant `--cwd` must stay inside the workspace (validated before spawning).
-- Each call is one-shot: child Pi participants use `--no-session` (no persistent Pi conversations) and `--no-extensions` (no recursive ConsensFlow load).
-- The session handoff embedded in the packet is size-capped; participants get a one-shot snapshot, not a live/shared transcript.
-- Pi skills policy is preset-controlled; `@iris` keeps Pi skills enabled by default.
+- **One-shot:** participants don't remember previous calls. Continuity comes from the handoff (re-sent each time), which now includes earlier `@participant` answers — so a later participant sees an earlier one's reply. Great for debate; if you want a genuinely *independent* opinion, ask that participant **first**, before others have replied.
+- **Isolated & safe:** each participant runs in its own subprocess, scoped to your workspace. A `--cwd` that escapes the workspace is rejected before launch. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself.
+- **You're always the lead.** ConsensFlow never implements anything on its own — it routes a question and shows you an answer.
 
 ---
 
-## Install for local development
+## Develop / test
 
 ```bash
-cd /Users/gabrielvoicu/Projects/ngvoicu/consensflow/consensflow-pi
-pi install . -l
+npm test     # node --test tests/*.test.mjs
 ```
-
-Temporary load without installing:
-
-```bash
-cd /Users/gabrielvoicu/Projects/ngvoicu/consensflow/consensflow-pi
-pi --no-extensions -e .
-```
-
----
-
-## Tests
-
-```bash
-cd /Users/gabrielvoicu/Projects/ngvoicu/consensflow/consensflow-pi
-npm test
-```
-
----
-
-## Current limitations
-
-- One participant per prompt.
-- No automatic fan-out or council orchestration.
-- No hidden spec/review/grill/handoff workflows.
-- Participants are one-shot — they keep no memory between calls. (Continuity comes only from the session handoff re-sent each call, which now includes earlier participant exchanges; the participant process itself does not persist.)
-- The current Pi lead remains responsible for implementation and final judgment.

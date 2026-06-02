@@ -73,8 +73,6 @@ Models are curated in `presets.js` rather than supplied during participant creat
 
 Current preset roster:
 
-- `zeus` — Claude Code Opus 4.7 MAX
-- `apollo` — Claude Code Opus 4.7 XHIGH
-- `athena` — Codex GPT 5.5 XHIGH
-- `iris` — Pi GPT 5.5 XHIGH
-- `luna` — OpenCode Kimi K2.6 MAX
+- House team: `zeus` / `apollo` (Claude Code Opus 4.8), `athena` (Codex GPT 5.5), `iris` (Pi GPT 5.5), `luna` (OpenCode Kimi K2.6)
+- Fast tier: `hermod` (Claude Haiku), `loki` (Codex medium), `nike` (Pi Gemini Flash), `freya` (OpenCode DeepSeek Flash)
+- Model zoo (same models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`

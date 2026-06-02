@@ -107,7 +107,12 @@ test("createPacket gives write-capable participants a read-write mode line", asy
 });
 
 test("participant presets expose the allowed creation list", () => {
-  assert.deepEqual(listPresetIds(), ["zeus", "apollo", "athena", "iris", "luna"]);
+  assert.deepEqual(listPresetIds(), [
+    "zeus", "apollo", "athena", "iris", "luna",
+    "hermod", "loki", "nike", "freya",
+    "hades", "helios", "ares", "hephaestus", "pan", "aeolus", "metis",
+    "odin", "heimdall", "thor", "tyr", "vidar", "njord", "mimir",
+  ]);
   assert.equal(getPreset("zeus").kind, "claude-code");
   assert.equal(getPreset("athena").model, "gpt-5.5");
   assert.equal(getPreset("iris").thinking, "xhigh");
@@ -223,7 +228,7 @@ test("participantFromPreset can rename while keeping the backend", () => {
   assert.equal(renamed.id, "deepreview");
   assert.equal(renamed.name, "Deepreview");
   assert.equal(renamed.kind, "claude-code");
-  assert.equal(renamed.model, "claude-opus-4-7");
+  assert.equal(renamed.model, "claude-opus-4-8");
   assert.equal(renamed.preset, "zeus");
   // Without a rename, the canonical preset id and name are kept.
   const luna = participantFromPreset("luna");

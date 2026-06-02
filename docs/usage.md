@@ -17,15 +17,13 @@ Participants are stored globally in `~/.consensflow/participants.json`. Add them
 
 Preset map:
 
-| Preset | Mention | Backend/model |
-|---|---|---|
-| `zeus` | `@zeus` | Claude Code Opus 4.7 MAX |
-| `apollo` | `@apollo` | Claude Code Opus 4.7 XHIGH |
-| `athena` | `@athena` | Codex GPT 5.5 XHIGH |
-| `iris` | `@iris` | Pi GPT 5.5 XHIGH |
-| `luna` | `@luna` | OpenCode Kimi K2.6 MAX |
+- **House team** (one reviewer per engine): `zeus`/`apollo` (Claude Code Opus 4.8), `athena` (Codex GPT 5.5), `iris` (Pi GPT 5.5), `luna` (OpenCode Kimi K2.6).
+- **Fast tier**: `hermod` (Claude Haiku), `loki` (Codex medium), `nike` (Pi Gemini Flash), `freya` (OpenCode DeepSeek Flash).
+- **Model zoo** (same OpenRouter models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`.
 
-Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--roles`, `--tools`, `--sessionPolicy`, `--contextPolicy`, `--skills`, `--agent`, `--maxTurns`. A `workspace-write`/`full-auto` participant can edit and run; participants whose roles are purely advisory (reviewer/council/knowledge) are always read-only.
+Run `/cf participants presets` for the full list with exact model strings.
+
+Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--roles`, `--tools`, `--skills`, `--agent`, `--maxTurns`. A `workspace-write`/`full-auto` participant can edit and run; participants whose roles are purely advisory (reviewer/council/knowledge) are always read-only.
 
 ## Ask directly
 

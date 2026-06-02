@@ -24,15 +24,16 @@ not persist between calls.
 
 ```text
 /cf participants presets
-/cf participants add zeus                     # from a preset (Claude Code Opus 4.7 MAX)
+/cf participants add zeus                     # from a preset (Claude Code Opus 4.8 MAX)
 /cf participants add zeus --name Deepreview   # preset backend, custom name -> @deepreview, /deepreview
 /cf participants add all                      # every preset
 /cf participants add --name Builder --kind codex --model gpt-5.5 --effort high \
     --roles implementer --tools workspace-write   # fully custom, write-capable
 ```
 
-Presets: zeus (Claude Code Opus 4.7 MAX), apollo (Opus 4.7 XHIGH), athena (Codex GPT 5.5 XHIGH),
-iris (Pi GPT 5.5 XHIGH), luna (OpenCode Kimi K2.6 MAX).
+Presets — house team: zeus/apollo (Claude Code Opus 4.8), athena (Codex GPT 5.5), iris (Pi GPT 5.5), luna (OpenCode Kimi K2.6).
+Fast tier: hermod (Claude Haiku), loki (Codex medium), nike (Pi Gemini Flash), freya (OpenCode DeepSeek Flash).
+Model zoo (same OpenRouter models, Greek = pi / Norse = opencode): DeepSeek V4 Pro hades/odin, Gemini 3.1 Pro helios/heimdall, Grok 4.3 ares/thor, Qwen3.7 Max hephaestus/tyr, Llama 4 Maverick pan/vidar, Mistral Large aeolus/njord, MiniMax M3 metis/mimir. Run `/cf participants presets` for the full list.
 
 ## Usage
 

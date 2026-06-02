@@ -336,8 +336,8 @@ async function collectGitDiffForPacket(cwd: string, pi: ExtensionAPI, signal?: A
 }
 
 const PRESET_OVERRIDE_FLAGS = ["name", "id", "cwd", "timeoutMs", "description"];
-const CUSTOM_ADD_FLAGS = ["name", "id", "kind", "model", "provider", "effort", "thinking", "roles", "tools", "toolsPolicy", "sessionPolicy", "contextPolicy", "skills", "skillsPolicy", "agent", "cwd", "timeoutMs", "maxTurns", "description"];
-const CUSTOM_SHAPE_FLAGS = ["kind", "model", "provider", "effort", "thinking", "roles", "tools", "toolsPolicy", "sessionPolicy", "contextPolicy", "skills", "skillsPolicy", "agent", "maxTurns"];
+const CUSTOM_ADD_FLAGS = ["name", "id", "kind", "model", "provider", "effort", "thinking", "roles", "tools", "toolsPolicy", "skills", "skillsPolicy", "agent", "cwd", "timeoutMs", "maxTurns", "description"];
+const CUSTOM_SHAPE_FLAGS = ["kind", "model", "provider", "effort", "thinking", "roles", "tools", "toolsPolicy", "skills", "skillsPolicy", "agent", "maxTurns"];
 
 function assertAllowedFlags(flags: Record<string, unknown>, allowed: string[], context: string) {
   const allowedSet = new Set(allowed);
@@ -380,8 +380,6 @@ function customParticipantInput(name: string, flags: Record<string, unknown>) {
     thinking: flags.thinking,
     roles: flags.roles,
     toolsPolicy: flags.tools ?? flags.toolsPolicy,
-    sessionPolicy: flags.sessionPolicy,
-    contextPolicy: flags.contextPolicy,
     skillsPolicy: flags.skills ?? flags.skillsPolicy,
     agent: flags.agent,
     cwd: flags.cwd,
