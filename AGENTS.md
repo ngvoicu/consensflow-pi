@@ -12,7 +12,7 @@ Core direction:
 - ConsensFlow is a lightweight prompt router, not a shared room.
 - Named participants are ephemeral one-shot subagent calls (no memory between calls).
 - Each call's packet embeds a serialized, capped handoff of the current session plus the prompt; participants stay isolated one-shot subprocesses — no live/shared transcript, no ACP.
-- Participant config is global/user-level under `~/.consensflow/participants.json`.
+- Participant config is global/user-level under `~/.consensflow/consensflow-pi/participants.json` (per-tool store; the Claude Code sibling `consensflow-cc` keeps its own same-format roster under `~/.consensflow/consensflow-cc/`).
 - Participants come from curated presets (`extensions/consensflow/lib/presets.js`, renameable via `--name`) or fully custom definitions (`/cf participants add --name … --kind … --model … --roles … --tools …`).
 - Each configured participant gets a dedicated `/<id>` command (registered at load); `@mention` and `/cf @name` also work.
 - Project-local `.consensflow/` stores run artifacts only.

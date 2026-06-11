@@ -4,7 +4,7 @@ ConsensFlow Pi uses natural-language prompts to one named participant at a time.
 
 ## Add participants
 
-Participants are stored globally in `~/.consensflow/participants.json`. Add them from a preset, rename a preset, or define a fully custom participant.
+Participants are stored globally in `~/.consensflow/consensflow-pi/participants.json` (per-tool; the Claude Code sibling keeps its own roster under `~/.consensflow/consensflow-cc/`). Add them from a preset, rename a preset, or define a fully custom participant.
 
 ```text
 /cf participants presets

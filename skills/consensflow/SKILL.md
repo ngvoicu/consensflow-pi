@@ -48,7 +48,7 @@ In short: ask freely, apply only with a green light.
 
 ## How participants are created
 
-Participants are configured globally under `~/.consensflow/participants.json` (set up once, use from any project). They come from curated presets or fully custom definitions:
+Participants are configured globally under `~/.consensflow/consensflow-pi/participants.json` (set up once, use from any project; the Claude Code sibling keeps its own roster under `~/.consensflow/consensflow-cc/`). They come from curated presets or fully custom definitions:
 
 ```text
 /cf participants presets                      # list built-in presets

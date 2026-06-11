@@ -23,7 +23,7 @@ extensions/consensflow/lib/
 Participant config is global/user-level, created from presets or custom definitions:
 
 ```text
-~/.consensflow/participants.json
+~/.consensflow/consensflow-pi/participants.json
 /cf participants presets
 /cf participants add <preset>|all [--name <name>]
 /cf participants add --name <name> --kind <kind> --model <model> [--roles <r>] [--tools <p>]

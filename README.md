@@ -255,7 +255,7 @@ The PNG is saved to `.consensflow/runs/<id>/image.png` and shown inline in Pi.
 
 ## Where config and artifacts live
 
-- **Participants (global):** `~/.consensflow/participants.json` — set up `@zeus` once, use him from any project.
+- **Participants (global, per tool):** `~/.consensflow/consensflow-pi/participants.json` — set up `@zeus` once, use him from any project. The Claude Code sibling (consensflow-cc) keeps its own same-format roster under `~/.consensflow/consensflow-cc/`; copy entries between the two files to share them.
 - **Run artifacts (per project):** `<workspace>/.consensflow/runs/…` — already in `.gitignore` here.
 
 ---

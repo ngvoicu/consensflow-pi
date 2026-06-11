@@ -8,8 +8,11 @@ export const ROLE_VALUES = ["lead", "spec-creator", "reviewer", "implementer", "
 export const TOOL_POLICIES = ["readonly", "workspace-write", "full-auto"];
 export const SKILLS_POLICIES = ["default", "none", "explicit"];
 
+// Per-tool participant store: pi and the Claude Code sibling (consensflow-cc) keep separate
+// rosters under the shared config home — ~/.consensflow/consensflow-pi/ here. CONSENSFLOW_HOME
+// overrides the parent home (tests point it at a temp dir).
 export function configRoot() {
-  return process.env.CONSENSFLOW_HOME || path.join(os.homedir(), ".consensflow");
+  return path.join(process.env.CONSENSFLOW_HOME || path.join(os.homedir(), ".consensflow"), "consensflow-pi");
 }
 
 export function cfRoot(cwd) {

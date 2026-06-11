@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { gitChangesDiffer } from "../extensions/consensflow/lib/artifacts.js";
 import { createPacket } from "../extensions/consensflow/lib/packets.js";
-import { getPreset, listPresetIds, participantFromPreset } from "../extensions/consensflow/lib/presets.js";
+import { getPreset, listPresetIds, PARTICIPANT_PRESETS, participantFromPreset } from "../extensions/consensflow/lib/presets.js";
 import { serializeTranscript } from "../extensions/consensflow/lib/handoff.js";
 import { buildRunnerInvocation, codexSandbox, effectiveTimeoutMs, normalizeProcessOutput, runParticipant, spawnWithInput, toolsForPi } from "../extensions/consensflow/lib/runners.js";
 import { getParticipant, loadParticipants, normalizeParticipant, removeParticipant, upsertParticipant } from "../extensions/consensflow/lib/state.js";
@@ -150,6 +150,45 @@ test("participant presets expose the allowed creation list", () => {
   assert.equal(luna.cwd, "frontend");
   assert.equal(luna.timeoutMs, 1234);
   assert.equal(participantFromPreset("custom"), null);
+});
+
+test("every preset survives normalize + runner invocation with correct flags (all models × all engines)", () => {
+  const KIND_COMMAND = { pi: "pi", "claude-code": "claude", codex: "codex", opencode: "opencode" };
+  for (const preset of PARTICIPANT_PRESETS) {
+    const participant = normalizeParticipant(participantFromPreset(preset.preset));
+    assert.equal(participant.id, preset.id, `${preset.preset}: id survives the pipeline`);
+    assert.equal(participant.kind, preset.kind, `${preset.preset}: kind`);
+    assert.equal(participant.model, preset.model, `${preset.preset}: model`);
+    assert.equal(effectiveToolsPolicy(participant), "readonly", `${preset.preset}: presets are advisory → readonly`);
+
+    if (preset.kind === "image") {
+      assert.throws(() => buildRunnerInvocation(participant, "/tmp/packet.md", "/repo"), /image participants/);
+      continue;
+    }
+    const invocation = buildRunnerInvocation(participant, "/tmp/packet.md", "/repo");
+    assert.equal(invocation.command, KIND_COMMAND[preset.kind], `${preset.preset}: engine command`);
+    const modelIdx = invocation.args.indexOf(preset.model);
+    assert.ok(modelIdx > 0, `${preset.preset}: model reaches the args`);
+    assert.equal(invocation.args[modelIdx - 1], "--model", `${preset.preset}: model flag`);
+
+    if (preset.kind === "claude-code") {
+      assert.equal(invocation.args[invocation.args.indexOf("--effort") + 1], preset.effort, `${preset.preset}: claude effort`);
+      assert.ok(invocation.args.includes("--disallowedTools"), `${preset.preset}: claude readonly deny list`);
+    }
+    if (preset.kind === "codex") {
+      assert.ok(invocation.args.includes(`model_reasoning_effort="${preset.effort}"`), `${preset.preset}: codex effort`);
+      assert.ok(invocation.args.includes("read-only"), `${preset.preset}: codex sandbox`);
+    }
+    if (preset.kind === "opencode") {
+      if (preset.effort) assert.equal(invocation.args[invocation.args.indexOf("--variant") + 1], preset.effort, `${preset.preset}: opencode variant`);
+      else assert.equal(invocation.args.includes("--variant"), false, `${preset.preset}: no catalog variant → no flag`);
+      assert.ok(invocation.env?.OPENCODE_PERMISSION, `${preset.preset}: opencode readonly permission env`);
+    }
+    if (preset.kind === "pi") {
+      assert.equal(invocation.args[invocation.args.indexOf("--thinking") + 1], preset.thinking ?? "off", `${preset.preset}: pi thinking`);
+      assert.equal(invocation.args[invocation.args.indexOf("--tools") + 1], "read,grep,find,ls", `${preset.preset}: pi readonly tools`);
+    }
+  }
 });
 
 test("runner invocation maps tool policies", () => {
