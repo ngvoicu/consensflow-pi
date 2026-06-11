@@ -110,9 +110,9 @@ test("createPacket gives write-capable participants a read-write mode line", asy
 
 test("participant presets expose the allowed creation list", () => {
   assert.deepEqual(listPresetIds(), [
-    "calliope", "clio", "thalia",
+    "calliope", "clio", "euterpe", "thalia",
     "zeus", "apollo", "artemis", "athena", "perseus", "iris", "hermes", "eos", "luna",
-    "orpheus", "erato", "saga", "kvasir",
+    "orpheus", "linus", "erato", "saga", "gunnlod", "kvasir",
     "kronos", "atlas", "baldr", "vali", "forseti", "bragi", "ullr",
     "hermod", "loki", "nike", "freya", "zephyros", "sif",
     "hades", "helios", "ares", "hephaestus", "pan", "aeolus", "metis",
@@ -141,6 +141,9 @@ test("participant presets expose the allowed creation list", () => {
   assert.equal(getPreset("orpheus").model, "anthropic/claude-fable-5");
   assert.equal(getPreset("saga").model, "openrouter/anthropic/claude-fable-5");
   assert.equal(getPreset("saga").effort, "xhigh");
+  assert.equal(getPreset("euterpe").effort, "high");
+  assert.equal(getPreset("linus").thinking, "high");
+  assert.equal(getPreset("gunnlod").effort, "high");
   const luna = participantFromPreset("luna", { cwd: "frontend", timeoutMs: 1234 });
   assert.equal(luna.id, "luna");
   assert.equal(luna.name, "Luna");

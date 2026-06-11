@@ -61,7 +61,7 @@ Participants are configured globally under `~/.consensflow/participants.json` (s
 
 Presets (all read-only reviewers; the same model+effort family exists on every engine that runs it):
 
-- **Fable 5** (Anthropic's top model — use for the questions that really matter): `@calliope`/`@clio`/`@thalia` (Claude Code max/xhigh/medium), `@orpheus`/`@erato` (Pi xhigh/medium, Anthropic auth), `@saga`/`@kvasir` (OpenCode xhigh/medium via OpenRouter).
+- **Fable 5** (Anthropic's top model — use for the questions that really matter): `@calliope`/`@clio`/`@euterpe`/`@thalia` (Claude Code max/xhigh/high/medium), `@orpheus`/`@linus`/`@erato` (Pi xhigh/high/medium, Anthropic auth), `@saga`/`@gunnlod`/`@kvasir` (OpenCode xhigh/high/medium via OpenRouter).
 - **Opus 4.8**: `@zeus`/`@apollo`/`@artemis` (Claude Code max/xhigh/medium), `@kronos`/`@atlas` (Pi xhigh/medium, Anthropic auth), `@baldr`/`@vali` (OpenCode xhigh/medium via OpenRouter; xhigh is the ceiling outside claude-code).
 - **GPT 5.5**: `@athena`/`@perseus`/`@loki` (Codex xhigh/high/medium), `@iris`/`@hermes`/`@eos` (Pi xhigh/high/medium), `@forseti`/`@bragi`/`@ullr` (OpenCode xhigh/high/medium via OpenRouter).
 - **Deep open-weights**: `@luna` (OpenCode Kimi K2.6).

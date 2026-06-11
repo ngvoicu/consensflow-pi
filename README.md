@@ -121,6 +121,9 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@clio` | claude-code | `claude-fable-5` | xhigh | read-only |
 | `@orpheus` | pi | `anthropic/claude-fable-5` | xhigh | read-only |
 | `@saga` | opencode | `openrouter/anthropic/claude-fable-5` | xhigh | read-only |
+| `@euterpe` | claude-code | `claude-fable-5` | high | read-only |
+| `@linus` | pi | `anthropic/claude-fable-5` | high | read-only |
+| `@gunnlod` | opencode | `openrouter/anthropic/claude-fable-5` | high | read-only |
 | `@thalia` | claude-code | `claude-fable-5` | medium | read-only |
 | `@erato` | pi | `anthropic/claude-fable-5` | medium | read-only |
 | `@kvasir` | opencode | `openrouter/anthropic/claude-fable-5` | medium | read-only |
