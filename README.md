@@ -73,14 +73,20 @@ That's the entire loop — no hidden steps, no background fan-out.
   | OpenCode | `opencode` |
   | Pi | `pi` (already there) |
 
-**Install the extension** (from this folder):
+**Install the extension** — straight from GitHub:
 
 ```bash
-cd /path/to/consensflow-pi
-pi install .
+pi install https://github.com/ngvoicu/consensflow-pi
 ```
 
-This registers it in your user-level Pi settings, so it's available in every Pi session. Start a new session (or restart Pi) to load it.
+Pi clones the repo and registers it in your user-level settings, so it's available in every Pi session. Start a new session (or restart Pi) to load it. Get newer versions later with `pi update`.
+
+**Or install from a local clone** (for development — your edits are picked up live):
+
+```bash
+git clone https://github.com/ngvoicu/consensflow-pi
+pi install ./consensflow-pi
+```
 
 **Verify**
 
@@ -89,7 +95,7 @@ This registers it in your user-level Pi settings, so it's available in every Pi 
 /cf status      # shows your configured participants
 ```
 
-**Uninstall** any time with `pi remove .` — your source folder and your participant config are left untouched.
+**Uninstall** any time with `pi remove <source>` (the same URL or path you installed) — your participant config is left untouched.
 
 ---
 
