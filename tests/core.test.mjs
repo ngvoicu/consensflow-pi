@@ -127,6 +127,12 @@ test("participant presets expose the allowed creation list", () => {
   assert.equal(getPreset("kronos").model, "anthropic/claude-opus-4-8");
   assert.equal(getPreset("baldr").model, "openrouter/anthropic/claude-opus-4.8");
   assert.equal(getPreset("forseti").model, "openrouter/openai/gpt-5.5");
+  // Effort vocabularies are engine-real: "max" exists only on claude-code; OpenRouter tops out
+  // at xhigh, and models without catalog variants (e.g. Kimi K2.6) carry no effort at all.
+  assert.equal(getPreset("baldr").effort, "xhigh");
+  assert.equal(getPreset("luna").effort, undefined);
+  assert.equal(getPreset("heimdall").effort, "high");
+  assert.equal(getPreset("sif").effort, "low");
   const luna = participantFromPreset("luna", { cwd: "frontend", timeoutMs: 1234 });
   assert.equal(luna.id, "luna");
   assert.equal(luna.name, "Luna");

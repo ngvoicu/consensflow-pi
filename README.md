@@ -118,9 +118,9 @@ Sorted by model, then effort (strongest first). Claude Opus 4.8 and GPT 5.5 lead
 | Preset | Tool | Model | Effort | Mode |
 |---|---|---|---|---|
 | `@zeus` | claude-code | `claude-opus-4-8` | max | read-only |
-| `@baldr` | opencode | `openrouter/anthropic/claude-opus-4.8` | max | read-only |
 | `@apollo` | claude-code | `claude-opus-4-8` | xhigh | read-only |
 | `@kronos` | pi | `anthropic/claude-opus-4-8` | xhigh | read-only |
+| `@baldr` | opencode | `openrouter/anthropic/claude-opus-4.8` | xhigh | read-only |
 | `@artemis` | claude-code | `claude-opus-4-8` | medium | read-only |
 | `@atlas` | pi | `anthropic/claude-opus-4-8` | medium | read-only |
 | `@vali` | opencode | `openrouter/anthropic/claude-opus-4.8` | medium | read-only |
@@ -139,12 +139,12 @@ Sorted by model, then effort (strongest first). Claude Opus 4.8 and GPT 5.5 lead
 | `@hades` | pi | `openrouter/deepseek/deepseek-v4-pro` | high | read-only |
 | `@odin` | opencode | `openrouter/deepseek/deepseek-v4-pro` | — | read-only |
 | `@helios` | pi | `openrouter/google/gemini-3.1-pro-preview` | high | read-only |
-| `@heimdall` | opencode | `openrouter/google/gemini-3.1-pro-preview` | — | read-only |
+| `@heimdall` | opencode | `openrouter/google/gemini-3.1-pro-preview` | high | read-only |
 | `@nike` | pi | `openrouter/google/gemini-3.5-flash` | low | read-only |
-| `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | — | read-only |
+| `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | low | read-only |
 | `@ares` | pi | `openrouter/x-ai/grok-4.3` | high | read-only |
 | `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — | read-only |
-| `@luna` | opencode | `openrouter/moonshotai/kimi-k2.6` | max | read-only |
+| `@luna` | opencode | `openrouter/moonshotai/kimi-k2.6` | — | read-only |
 | `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high | read-only |
 | `@vidar` | opencode | `openrouter/meta-llama/llama-4-maverick` | — | read-only |
 | `@metis` | pi | `openrouter/minimax/minimax-m3` | high | read-only |
@@ -154,6 +154,8 @@ Sorted by model, then effort (strongest first). Claude Opus 4.8 and GPT 5.5 lead
 | `@hephaestus` | pi | `openrouter/qwen/qwen3.7-max` | high | read-only |
 | `@tyr` | opencode | `openrouter/qwen/qwen3.7-max` | — | read-only |
 | `@pygmalion` | image (Codex backend) | `gpt-image-2` | — | — |
+
+Why some cells differ: `max` exists only on claude-code — pi's thinking scale and OpenRouter's effort scale both top out at `xhigh`, so that is the ceiling tier everywhere else. A `—` effort means the engine's catalog defines no effort variants for that model (it runs at the model's default reasoning).
 
 Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. All presets are read-only reviewers — for a write-capable participant, create a custom one (Step 2).
 

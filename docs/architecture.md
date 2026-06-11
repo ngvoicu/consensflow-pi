@@ -76,9 +76,9 @@ Presets curate known-good model/effort combinations in `presets.js`; custom part
 
 Current preset roster (read-only reviewers; each model+effort family on every engine that runs it):
 
-- Opus 4.8: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium, Anthropic provider), `baldr`/`vali` (opencode max/medium via OpenRouter)
+- Opus 4.8: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium, Anthropic provider), `baldr`/`vali` (opencode xhigh/medium via OpenRouter — xhigh is the effort ceiling everywhere outside claude-code)
 - GPT 5.5: `athena`/`perseus`/`loki` (codex xhigh/high/medium), `iris`/`hermes`/`eos` (pi xhigh/high/medium), `forseti`/`bragi`/`ullr` (opencode xhigh/high/medium via OpenRouter)
-- Deep open-weights: `luna` (OpenCode Kimi K2.6 max)
+- Deep open-weights: `luna` (OpenCode Kimi K2.6)
 - Fast tier: `hermod` (Claude Haiku), `nike`/`sif` (Gemini Flash on pi/opencode), `zephyros`/`freya` (DeepSeek Flash on pi/opencode)
 - Model zoo (same models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`
 - Image: `pygmalion` (kind=image) — gpt-image-2 via the Codex Responses backend, not a CLI
