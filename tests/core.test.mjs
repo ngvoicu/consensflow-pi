@@ -1,15 +1,17 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { gitChangesDiffer } from "../extensions/consensflow/lib/artifacts.js";
 import { createPacket } from "../extensions/consensflow/lib/packets.js";
 import { getPreset, listPresetIds, participantFromPreset } from "../extensions/consensflow/lib/presets.js";
 import { serializeTranscript } from "../extensions/consensflow/lib/handoff.js";
-import { buildRunnerInvocation, codexSandbox, toolsForPi, normalizeProcessOutput, runParticipant } from "../extensions/consensflow/lib/runners.js";
-import { getParticipant, loadParticipants, removeParticipant, upsertParticipant } from "../extensions/consensflow/lib/state.js";
+import { buildRunnerInvocation, codexSandbox, effectiveTimeoutMs, normalizeProcessOutput, runParticipant, spawnWithInput, toolsForPi } from "../extensions/consensflow/lib/runners.js";
+import { getParticipant, loadParticipants, normalizeParticipant, removeParticipant, upsertParticipant } from "../extensions/consensflow/lib/state.js";
 import { effectiveToolsPolicy, participantForKind } from "../extensions/consensflow/lib/workflows.js";
 import { parseOptions, parseParticipantPrompt, slugify, tokenize } from "../extensions/consensflow/lib/utils.js";
+import { buildImageRequestBody, decodeChatGptAccountId, extractImageFromEvents, saveImagePng } from "../extensions/consensflow/lib/image.js";
 
 async function withTempDir(fn) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "cf-pi-test-"));
@@ -76,10 +78,10 @@ test("createPacket is conversational, mode-aware, and carries handoff + diff", a
       participant,
       kind: "ask",
       task: "Review the latest changes",
-      handoff: "Gabriel:\nhi\n\nLead:\nworking on the packet",
+      handoff: "User:\nhi\n\nLead:\nworking on the packet",
       diff: { status: " M README.md", stat: "README.md | 2 +", patch: "diff --git a/README.md b/README.md" },
     });
-    assert.match(packet, /## Message from Gabriel/);
+    assert.match(packet, /## Message from the user/);
     assert.match(packet, /Review the latest changes/);
     assert.match(packet, /Read-only: you can inspect the workspace/);
     assert.match(packet, /## Handoff — current session/);
@@ -112,10 +114,12 @@ test("participant presets expose the allowed creation list", () => {
     "hermod", "loki", "nike", "freya",
     "hades", "helios", "ares", "hephaestus", "pan", "aeolus", "metis",
     "odin", "heimdall", "thor", "tyr", "vidar", "njord", "mimir",
+    "pygmalion",
   ]);
   assert.equal(getPreset("zeus").kind, "claude-code");
   assert.equal(getPreset("athena").model, "gpt-5.5");
   assert.equal(getPreset("iris").thinking, "xhigh");
+  assert.equal(getPreset("pygmalion").kind, "image");
   const luna = participantFromPreset("luna", { cwd: "frontend", timeoutMs: 1234 });
   assert.equal(luna.id, "luna");
   assert.equal(luna.name, "Luna");
@@ -142,6 +146,46 @@ test("runner invocation maps tool policies", () => {
   assert.ok(codex.args.includes("--ignore-user-config"));
   assert.ok(codex.args.includes("--ignore-rules"));
   assert.ok(codex.args.includes("model_reasoning_effort=\"xhigh\""));
+});
+
+test("readonly enforcement reaches every engine: claude allow+deny lists, opencode permission env", () => {
+  // Claude readonly: explorers allowed, write tools explicitly denied (a user-level Bash
+  // allowlist must not leak write capability into a read-only reviewer).
+  const claude = buildRunnerInvocation({ kind: "claude-code", toolsPolicy: "readonly" }, "/tmp/packet.md", "/repo");
+  assert.ok(claude.args.includes("Read,Grep,Glob"));
+  const denyIndex = claude.args.indexOf("--disallowedTools");
+  assert.ok(denyIndex >= 0);
+  assert.match(claude.args[denyIndex + 1], /Bash/);
+  assert.match(claude.args[denyIndex + 1], /Edit/);
+  assert.match(claude.args[denyIndex + 1], /Write/);
+  const claudeWrite = buildRunnerInvocation({ kind: "claude-code", toolsPolicy: "workspace-write" }, "/tmp/packet.md", "/repo");
+  assert.equal(claudeWrite.args.includes("--disallowedTools"), false);
+  assert.ok(claudeWrite.args.some((arg) => arg.includes("Edit") && arg.includes("Bash")));
+
+  // OpenCode defaults to edit/bash "allow"; readonly must override via OPENCODE_PERMISSION.
+  const opencode = buildRunnerInvocation({ kind: "opencode", toolsPolicy: "readonly" }, "/tmp/packet.md", "/repo");
+  assert.deepEqual(JSON.parse(opencode.env.OPENCODE_PERMISSION), { edit: "deny", bash: "deny" });
+  const opencodeWrite = buildRunnerInvocation({ kind: "opencode", toolsPolicy: "workspace-write" }, "/tmp/packet.md", "/repo");
+  assert.equal(opencodeWrite.env?.OPENCODE_PERMISSION, undefined);
+
+  // Billing guard: participant runs ride the configured logins, not a stray env API key.
+  assert.deepEqual(claude.dropEnv, ["ANTHROPIC_API_KEY"]);
+  const codex = buildRunnerInvocation({ kind: "codex", toolsPolicy: "readonly" }, "/tmp/packet.md", "/repo");
+  assert.deepEqual(codex.dropEnv, ["OPENAI_API_KEY"]);
+});
+
+test("spawnWithInput survives a child that exits without reading stdin (EPIPE)", async () => {
+  // `true` exits immediately without consuming the 5MB packet; the stdin pipe raises EPIPE,
+  // which must be captured, not thrown as an uncaughtException that kills the host.
+  const result = await spawnWithInput("true", [], { input: "x".repeat(5 * 1024 * 1024), timeoutMs: 10_000 });
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.timedOut, false);
+});
+
+test("effectiveTimeoutMs: per-call override wins over participant config, then the default", () => {
+  assert.equal(effectiveTimeoutMs({ timeoutMs: 900000 }, 1234), 1234);
+  assert.equal(effectiveTimeoutMs({ timeoutMs: 900000 }, undefined), 900000);
+  assert.equal(effectiveTimeoutMs({}, undefined), 10 * 60 * 1000);
 });
 
 test("advisory roles are forced read-only; configured tools are honored otherwise", () => {
@@ -245,7 +289,7 @@ test("serializeTranscript preserves chronological (root->leaf) order with role l
     { type: "message", id: "3", message: { role: "assistant", content: [{ type: "text", text: "Second reply" }, { type: "toolCall", name: "read", arguments: { path: "a.ts" } }] } },
   ];
   const text = serializeTranscript(branch, { maxBytes: 10000 });
-  assert.match(text, /Gabriel:\nfirst question/);
+  assert.match(text, /User:\nfirst question/);
   assert.match(text, /Lead:\nFirst reply/);
   assert.match(text, /→ read\(/);
   assert.ok(text.indexOf("first question") < text.indexOf("second question"), "chronological order");
@@ -286,10 +330,22 @@ test("serializeTranscript surfaces prior ConsensFlow participant exchanges (cros
     },
   ];
   const text = serializeTranscript(branch);
-  assert.match(text, /Gabriel → @iris: which cache strategy\?/);
+  assert.match(text, /User → @iris: which cache strategy\?/);
   assert.match(text, /@iris replied:\nUse a write-through cache\./);
   // The run-metadata noise from the rendered message is not used when structured details exist.
   assert.doesNotMatch(text, /Run: ask-123/);
+});
+
+test("serializeTranscript keeps cf_run_participant tool results near-whole (lead-initiated cross-pollination)", () => {
+  const reply = "A".repeat(5000);
+  const branch = [
+    { type: "message", id: "1", message: { role: "toolResult", toolName: "cf_run_participant", content: [{ type: "text", text: reply }] } },
+    { type: "message", id: "2", message: { role: "toolResult", toolName: "read", content: [{ type: "text", text: reply }] } },
+  ];
+  const text = serializeTranscript(branch);
+  // The consultation survives beyond the generic cap; ordinary tool results stay tightly truncated.
+  assert.ok(text.includes(reply));
+  assert.match(text, /Tool result read:\nA{1500}…\[truncated\]/);
 });
 
 test("parseParticipantPrompt routes one mention anywhere, and never hijacks stray @tokens", () => {
@@ -314,4 +370,132 @@ test("parseParticipantPrompt routes one mention anywhere, and never hijacks stra
   assert.ok(parseParticipantPrompt(["@zeus"], known)?.error);
   // Without a known-set, a non-leading mention does not route (conservative default).
   assert.equal(parseParticipantPrompt(["hi", "@zeus"]), null);
+});
+
+test("image helpers: JWT account id, request body, SSE extraction, PNG save", async () => {
+  // decodeChatGptAccountId pulls the claim out of the openai-codex JWT.
+  const payload = Buffer.from(JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "acc_42" } })).toString("base64url");
+  assert.equal(decodeChatGptAccountId(`h.${payload}.sig`), "acc_42");
+  assert.throws(() => decodeChatGptAccountId("not-a-jwt"), /JWT/);
+
+  // buildImageRequestBody triggers exactly one image_generation call with the prompt.
+  const body = buildImageRequestBody("a red cat", "gpt-5.5");
+  assert.equal(body.model, "gpt-5.5");
+  assert.equal(body.tools[0].type, "image_generation");
+  assert.equal(body.input[0].content[0].text, "a red cat");
+
+  // extractImageFromEvents finds the base64 image + metadata across SSE events.
+  const img = extractImageFromEvents([
+    { type: "response.created", response: { id: "r1" } },
+    { type: "response.output_item.done", item: { type: "image_generation_call", id: "i1", status: "completed", result: "QkFTRTY0", revised_prompt: "a bright red cat" } },
+    { type: "response.completed", response: { id: "r1" } },
+  ]);
+  assert.equal(img.base64, "QkFTRTY0");
+  assert.equal(img.revisedPrompt, "a bright red cat");
+  assert.equal(img.responseId, "r1");
+  assert.throws(() => extractImageFromEvents([{ type: "error", message: "boom" }]), /boom/);
+
+  // saveImagePng decodes base64 and writes the file.
+  await withTempDir(async (cwd) => {
+    const b64 = Buffer.from("PNGDATA").toString("base64");
+    const saved = await saveImagePng(b64, path.join(cwd, "runs", "img1"), "image.png");
+    assert.equal((await readFile(saved)).toString(), "PNGDATA");
+  });
+});
+
+test("effectiveToolsPolicy coerces every advisory role to readonly; non-advisory/empty roles honor the policy", () => {
+  assert.equal(effectiveToolsPolicy({ roles: ["reviewer"], toolsPolicy: "workspace-write" }), "readonly");
+  assert.equal(effectiveToolsPolicy({ roles: ["council"], toolsPolicy: "workspace-write" }), "readonly");
+  assert.equal(effectiveToolsPolicy({ roles: ["knowledge"], toolsPolicy: "full-auto" }), "readonly");
+  // A mix that includes a non-advisory role is not purely advisory -> honors the configured policy.
+  assert.equal(effectiveToolsPolicy({ roles: ["reviewer", "implementer"], toolsPolicy: "workspace-write" }), "workspace-write");
+  // Fail safe: an empty (or missing) roles set grants no write capability, regardless of the configured policy.
+  assert.equal(effectiveToolsPolicy({ roles: [], toolsPolicy: "workspace-write" }), "readonly");
+  assert.equal(effectiveToolsPolicy({ roles: [], toolsPolicy: "readonly" }), "readonly");
+  assert.equal(effectiveToolsPolicy({ toolsPolicy: "full-auto" }), "readonly");
+});
+
+test("normalizeParticipant rejects all-invalid roles so a misconfigured write policy cannot slip through", () => {
+  // --roles bogus would filter to [] and bypass the advisory->readonly coercion, leaving it write-capable.
+  assert.throws(
+    () => normalizeParticipant({ name: "X", kind: "codex", roles: "bogus", toolsPolicy: "workspace-write" }),
+    /roles must be one or more of/,
+  );
+  // Omitted roles fall back to the valid default (reviewer) and are coerced read-only.
+  const p = normalizeParticipant({ name: "Y", kind: "codex", toolsPolicy: "workspace-write" });
+  assert.deepEqual(p.roles, ["reviewer"]);
+  assert.equal(effectiveToolsPolicy(p), "readonly");
+  // A partially-valid roles list keeps the valid entries (does not throw).
+  const q = normalizeParticipant({ name: "Z", kind: "codex", roles: "implementer,bogus", toolsPolicy: "workspace-write" });
+  assert.deepEqual(q.roles, ["implementer"]);
+  assert.equal(effectiveToolsPolicy(q), "workspace-write");
+  // Whitespace/comma-only roles normalize to [] (no throw) but stay fail-safe: never write-capable.
+  const empty = normalizeParticipant({ name: "E", kind: "codex", roles: " , ", toolsPolicy: "workspace-write" });
+  assert.deepEqual(empty.roles, []);
+  assert.equal(effectiveToolsPolicy(empty), "readonly");
+});
+
+test("parseParticipantPrompt: ask/to verb prefixes and the ask-noise boundary", () => {
+  const known = new Set(["zeus", "athena"]);
+  // The "to" verb addresses a leading participant.
+  assert.deepEqual(parseParticipantPrompt(["to", "@zeus", "hi"], known), { participant: "zeus", prompt: "hi" });
+  // A leading address routes even when the name is not in the known set (explicit address wins).
+  assert.deepEqual(parseParticipantPrompt(["ask", "@ghost", "hi"], known), { participant: "ghost", prompt: "hi" });
+  // "ask <english-verb> @types/..." is not an address: the @token is unknown -> stays with the lead.
+  assert.equal(parseParticipantPrompt(["ask", "fix", "@types/node", "please"], known), null);
+});
+
+test("the cf_run_participant consent gate and name-neutrality stay locked in the extension source", async () => {
+  const src = await readFile(new URL("../extensions/consensflow.ts", import.meta.url), "utf8");
+  // The consent gate must stay in the tool description + promptSnippet (its load-bearing home).
+  assert.match(src, /do NOT apply/);
+  assert.match(src, /without first showing the user/);
+  assert.match(src, /no user permission needed/);
+  // The personal name must not reappear anywhere in the extension.
+  assert.doesNotMatch(src, /Gabriel/);
+  // No hidden-workflow commands should be registered (council/knowledge are legit roles, so match the command form only).
+  assert.doesNotMatch(src, /registerCommand\("(grill|spec-review|council|handoff)"/);
+});
+
+test("every lib symbol the extension imports is actually exported (boundary smoke)", async () => {
+  const src = await readFile(new URL("../extensions/consensflow.ts", import.meta.url), "utf8");
+  const importRe = /import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+"(\.\/consensflow\/lib\/[^"]+)"/g;
+  let match;
+  let checked = 0;
+  while ((match = importRe.exec(src))) {
+    const symbols = match[1].split(",").map((s) => s.trim().split(/\s+as\s+/)[0].trim()).filter(Boolean);
+    const loaded = await import(match[2].replace("./consensflow/lib/", "../extensions/consensflow/lib/"));
+    for (const symbol of symbols) {
+      assert.notEqual(loaded[symbol], undefined, `${match[2]} must export ${symbol}`);
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= 10, `expected to verify several lib imports, got ${checked}`);
+});
+
+test("image path safety: runner backstop throws and extractImageFromEvents handles failure/empty", () => {
+  // The runner must never spawn a CLI for an image participant.
+  assert.throws(() => buildRunnerInvocation({ kind: "image", model: "gpt-5.5" }, "/tmp/packet.md", "/tmp"), /image participants are generated/);
+  // response.failed surfaces the error message.
+  assert.throws(() => extractImageFromEvents([{ type: "response.failed", response: { error: { message: "content blocked" } } }]), /content blocked/);
+  // A text-only / empty stream yields no image rather than a bogus base64.
+  assert.equal(extractImageFromEvents([{ type: "response.output_text.delta", delta: "hi" }]).base64, undefined);
+  assert.equal(extractImageFromEvents([]).base64, undefined);
+});
+
+test("gitChangesDiffer detects untracked + staged + re-edit changes a plain `git diff` would miss", () => {
+  const base = { status: "", patch: "", stat: "", cached: "" };
+  // Identical snapshots -> no change.
+  assert.equal(gitChangesDiffer(base, { ...base }), false);
+  // A new (untracked) file: git diff/stat stay empty; only `git status --short` shows it.
+  assert.equal(gitChangesDiffer(base, { ...base, status: "?? new.js" }), true);
+  // A staged edit: unstaged patch empty, cached holds the diff.
+  assert.equal(gitChangesDiffer(base, { ...base, status: "M  a.js", cached: "diff --git a/a.js b/a.js" }), true);
+  // Re-editing an already-dirty file: status line is identical, but the patch content grows.
+  const before = { status: " M a.js", patch: "@@ -1 +1 @@\n-x\n+y", stat: " a.js | 2 +-", cached: "" };
+  const after = { status: " M a.js", patch: "@@ -1 +2 @@\n-x\n+y\n+z", stat: " a.js | 3 +-", cached: "" };
+  assert.equal(gitChangesDiffer(before, after), true);
+  // Missing snapshots: no `after` -> cannot tell (false); no `before` -> assume changed (true).
+  assert.equal(gitChangesDiffer(before, null), false);
+  assert.equal(gitChangesDiffer(null, after), true);
 });

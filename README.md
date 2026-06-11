@@ -11,10 +11,10 @@ You're coding with **Pi**, your main AI assistant. Sometimes you want another mo
 ConsensFlow lets you keep a roster of **participants**. A participant is just *one specific AI agent + model* that you've set up and given a name — like `@zeus` or `@athena`. When you want one's opinion, you `@mention` it right in your Pi chat. ConsensFlow then:
 
 1. packages a snapshot of your current conversation (the **handoff**) plus your question,
-2. runs that agent quietly in the background as a **one-shot**,
+2. runs that agent in an isolated subprocess as a **one-shot** (your session stays usable),
 3. and shows you its answer.
 
-Think of it as a panel of advisors on speed-dial. **You stay in charge** (you're "the lead") — they only give input. It is **not** a group chat, not parallel fan-out, not a fixed workflow. One question → one participant → one answer, every time.
+Think of it as a panel of advisors on speed-dial. **You stay in charge** (you're "the lead") — they advise, and you decide what to keep. It is **not** a group chat, not parallel fan-out, not a fixed workflow. One question → one participant → one answer, every time.
 
 The whole idea in five bullets:
 
@@ -22,7 +22,7 @@ The whole idea in five bullets:
 - **One at a time.** `@zeus @athena …` is rejected — ask one, read, then ask the next.
 - **Read-only by default.** A participant can look at your files but not change them, unless you explicitly make it write-capable.
 - **One-shot, but context-aware.** Each call is fresh (no memory of past calls), yet it always receives the current session handoff — *including earlier participants' answers* — so the 2nd agent you ask can build on the 1st.
-- **The lead can ask too.** You can also just tell Pi "get Zeus's take and apply what makes sense," and Pi will call the participant itself.
+- **The lead can ask too — and asks before applying.** Pi will consult a participant on its own initiative when a second opinion would help, then report back and get your go-ahead before applying anything — unless you pre-authorized it (e.g. "get Zeus's take and apply what makes sense").
 
 ---
 
@@ -40,14 +40,14 @@ It builds a "packet" for @zeus:
    • mode line           (read-only — or read-write if you made it write-capable)
    • handoff             (a snapshot of THIS session + earlier @participant replies)
    • your question
-   • git status/diff      (only if your prompt mentions "latest changes")
+   • git status/diff      (only if your prompt mentions latest changes / diff / patch)
    ▼
 Runs @zeus as an isolated, one-shot subprocess:
    claude -p … --model claude-opus-4-8 --effort max   (read-only tools)
    no memory of past calls, no live access to your session — just the packet
    ▼
 Saves everything as an artifact:
-   <workspace>/.consensflow/runs/<run-id>/{packet.md, stdout.txt, result.json}
+   <workspace>/.consensflow/runs/<run-id>/{packet.md, stdout.txt, stderr.txt, result.json}
    ▼
 Shows @zeus's answer back in your Pi session
    ▼
@@ -136,6 +136,12 @@ See the presets:
 | Mistral Large | `@aeolus` | `@njord` |
 | MiniMax M3 | `@metis` | `@mimir` |
 
+**Image generation:**
+
+| Preset | Kind | Output |
+|---|---|---|
+| `@pygmalion` | image | gpt-image-2, via your Codex login |
+
 Add one, all, or a renamed copy:
 
 ```text
@@ -151,10 +157,10 @@ After adding, run `/reload` so each participant gets its own `/<name>` command. 
 The popular models already ship as presets (the tables above), so usually you just `add` a name. For anything else, define a **custom** participant — model/effort strings pass straight through, so **any identifier the engine accepts works.** One example per variation:
 
 ```text
-# A different Claude model (claude-code effort: low | medium | high | max)
+# A different Claude model (claude-code effort: low | medium | high | xhigh | max)
 /cf participants add --name Sonnet --kind claude-code --model claude-sonnet-4-6 --effort high
 
-# Any OpenRouter model via Pi (reasoning via --thinking off | low | high | xhigh)
+# Any OpenRouter model via Pi (reasoning via --thinking off | minimal | low | medium | high | xhigh)
 /cf participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
 
 # A write-capable implementer, not just a reviewer (OpenCode; effort maps to --variant)
@@ -194,12 +200,29 @@ The reply appears inline in Pi. Every run is also saved under the workspace:
 <workspace>/.consensflow/runs/<run-id>/
   packet.md      # exactly what the participant was sent
   stdout.txt     # raw engine output
+  stderr.txt     # raw engine errors/progress
   result.json    # parsed answer + metadata
 ```
+
+A write-capable run also saves `post-run-changes.diff` — what changed on disk, for review before you keep it.
 
 Then you, the lead, decide: implement all of it, some of it, or none.
 
 ---
+
+### Images — the `@pygmalion` participant
+
+`@pygmalion` is an **image** participant: mention it with a description and it generates a picture (gpt-image-2, via your existing `openai-codex` login — no extra key) instead of returning text.
+
+```text
+@pygmalion a minimalist logo for a terminal multi-agent tool — flat vector, navy + amber
+```
+
+The PNG is saved to `.consensflow/runs/<id>/image.png` and shown inline in Pi.
+
+- Takes your **prompt only** — no session handoff (an image model can't use the transcript).
+- Needs a ChatGPT Plus/Pro (Codex) login (`/login` → openai-codex); you get a clear error if it's missing.
+- Roll your own: `/cf participants add --name <name> --kind image` (the model field is only the trigger; the backend is always gpt-image-2).
 
 ## Where config and artifacts live
 
@@ -217,7 +240,7 @@ Then you, the lead, decide: implement all of it, some of it, or none.
 /cf participants list            # list configured participants
 /cf participants add <preset> [--name N] [--cwd subdir] [--timeoutMs ms]
 /cf participants add all
-/cf participants add --name N --kind <pi|claude-code|codex|opencode> --model M \
+/cf participants add --name N --kind <pi|claude-code|codex|opencode|image> --model M \
      [--effort e | --thinking t] [--roles r] [--tools readonly|workspace-write|full-auto] [--cwd subdir]
 /cf participants show @name
 /cf participants remove @name
@@ -236,8 +259,8 @@ Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thin
 ## Good to know
 
 - **One-shot:** participants don't remember previous calls. Continuity comes from the handoff (re-sent each time), which now includes earlier `@participant` answers — so a later participant sees an earlier one's reply. Great for debate; if you want a genuinely *independent* opinion, ask that participant **first**, before others have replied.
-- **Isolated & safe:** each participant runs in its own subprocess, scoped to your workspace. A `--cwd` that escapes the workspace is rejected before launch. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself.
-- **You're always the lead.** ConsensFlow never implements anything on its own — it routes a question and shows you an answer.
+- **Isolated & safe:** each participant runs in its own subprocess, scoped to your workspace. A `--cwd` that escapes the workspace is rejected before launch. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself. Read-only is enforced with each engine's own mechanism: an OS sandbox for Codex, allow+deny tool lists for Claude Code, a read-only tool allowlist for Pi, and a deny-edit/bash permission override (`OPENCODE_PERMISSION`) for OpenCode.
+- **You're always the lead.** ConsensFlow routes your question and shows you the answer — it never implements or keeps anything on its own. The lead consults freely, but summarizes a participant's response (or a write-capable participant's file edits) and asks before applying it, unless you've already told it to proceed.
 
 ---
 

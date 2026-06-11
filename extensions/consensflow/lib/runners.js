@@ -13,9 +13,18 @@ export function toolsForPi(policy) {
 }
 
 export function claudeAllowedTools(policy) {
-  if (policy === "readonly") return "Read";
-  return "Read,Edit,Write,Bash";
+  if (policy === "readonly") return "Read,Grep,Glob";
+  return "Read,Grep,Glob,Edit,Write,Bash";
 }
+
+// --allowedTools only pre-approves; it does not block tools the user's own settings allow.
+// Readonly must also deny, or a broad user-level Bash allowlist leaks write capability in.
+export const CLAUDE_READONLY_DISALLOWED = "Bash,Edit,MultiEdit,NotebookEdit,Write";
+
+// Permission overlay for readonly opencode runs: opencode defaults to edit/bash "allow", so
+// without this a "read-only" participant could edit files. Denying `edit` covers the
+// write/edit/patch tools; read/grep/glob stay available.
+export const OPENCODE_READONLY_PERMISSION = JSON.stringify({ edit: "deny", bash: "deny" });
 
 export function codexSandbox(policy) {
   if (policy === "readonly") return "read-only";
@@ -39,11 +48,14 @@ export function buildRunnerInvocation(participant, packetPath, cwd) {
     }
     case "claude-code": {
       const args = ["-p", "Follow the ConsensFlow packet provided on stdin. Return only the requested output.", "--output-format", "json", "--no-session-persistence", "--allowedTools", claudeAllowedTools(p.toolsPolicy)];
+      if (p.toolsPolicy === "readonly") args.push("--disallowedTools", CLAUDE_READONLY_DISALLOWED);
       if (p.model) args.push("--model", p.model);
       if (p.effort) args.push("--effort", p.effort);
       if (p.maxTurns) args.push("--max-turns", String(p.maxTurns));
       if (p.toolsPolicy === "full-auto") args.push("--dangerously-skip-permissions");
-      return { command: "claude", args, stdinMode: "packet", cwd };
+      // Without the env key, claude falls back to the subscription login; with it, it silently
+      // bills the API. Strip it so participant runs always ride the configured login.
+      return { command: "claude", args, stdinMode: "packet", cwd, dropEnv: ["ANTHROPIC_API_KEY"] };
     }
     case "codex": {
       const args = ["exec", "--json", "--ephemeral", "--skip-git-repo-check", "--ignore-user-config", "--ignore-rules", "--sandbox", codexSandbox(p.toolsPolicy), "-C", cwd];
@@ -51,7 +63,8 @@ export function buildRunnerInvocation(participant, packetPath, cwd) {
       if (p.effort) args.push("-c", `model_reasoning_effort=\"${p.effort}\"`);
       if (p.toolsPolicy === "full-auto") args.push("--dangerously-bypass-approvals-and-sandbox");
       args.push("-");
-      return { command: "codex", args, stdinMode: "packet", cwd };
+      // Same billing guard as claude: a set OPENAI_API_KEY would switch codex off the ChatGPT login.
+      return { command: "codex", args, stdinMode: "packet", cwd, dropEnv: ["OPENAI_API_KEY"] };
     }
     case "opencode": {
       const args = ["run", "--format", "json", "--dir", cwd, "--file", packetPath];
@@ -60,11 +73,19 @@ export function buildRunnerInvocation(participant, packetPath, cwd) {
       if (p.agent) args.push("--agent", p.agent);
       if (p.toolsPolicy === "full-auto") args.push("--dangerously-skip-permissions");
       args.push("Follow the ConsensFlow packet attached as a file. Return only the requested output.");
-      return { command: "opencode", args, stdinMode: "none", cwd };
+      const env = p.toolsPolicy === "readonly" ? { OPENCODE_PERMISSION: OPENCODE_READONLY_PERMISSION } : undefined;
+      return { command: "opencode", args, stdinMode: "none", cwd, env };
     }
+    case "image":
+      throw new Error("image participants are generated via the Codex backend, not a CLI runner (bug: should be handled upstream in the image path)");
     default:
       throw new Error(`Unsupported participant kind: ${p.kind}`);
   }
+}
+
+// An explicit per-call override wins over the participant's configured timeout, then the default.
+export function effectiveTimeoutMs(participant, requestedMs) {
+  return Number(requestedMs) || Number(participant?.timeoutMs) || DEFAULT_TIMEOUT_MS;
 }
 
 export async function runParticipant(input) {
@@ -82,8 +103,10 @@ export async function runParticipant(input) {
   const procResult = await spawnWithInput(invocation.command, invocation.args, {
     cwd: invocation.cwd,
     input: invocation.stdinMode === "packet" ? packet : undefined,
+    env: invocation.env,
+    dropEnv: invocation.dropEnv,
     signal,
-    timeoutMs: Number(participant.timeoutMs) || input.timeoutMs || DEFAULT_TIMEOUT_MS,
+    timeoutMs: effectiveTimeoutMs(participant, input.timeoutMs),
   });
   const endedAt = nowIso();
 
@@ -113,9 +136,14 @@ export async function runParticipant(input) {
 }
 
 export async function spawnWithInput(command, args, options = {}) {
-  const { cwd = process.cwd(), input, signal, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
+  const { cwd = process.cwd(), input, signal, timeoutMs = DEFAULT_TIMEOUT_MS, env: envOverrides, dropEnv } = options;
+  let env;
+  if (envOverrides || (dropEnv && dropEnv.length > 0)) {
+    env = { ...process.env, ...(envOverrides ?? {}) };
+    for (const key of dropEnv ?? []) delete env[key];
+  }
   return await new Promise((resolve) => {
-    const child = spawn(command, args, { cwd, stdio: ["pipe", "pipe", "pipe"], shell: false });
+    const child = spawn(command, args, { cwd, env, stdio: ["pipe", "pipe", "pipe"], shell: false });
     let stdout = "";
     let stderr = "";
     let truncated = false;
@@ -174,6 +202,9 @@ export async function spawnWithInput(command, args, options = {}) {
     });
     child.on("close", (code, sig) => finish(code ?? 0, sig));
 
+    // A child that exits before consuming stdin (bad flag, login failure) raises EPIPE here;
+    // without a listener that is an uncaughtException that kills the host pi process.
+    child.stdin.on("error", (error) => append("stderr", `\n[stdin error] ${error.message}`));
     if (input !== undefined) child.stdin.end(input);
     else child.stdin.end();
   });

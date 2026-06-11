@@ -18,7 +18,7 @@ A **Pi** (`@earendil-works/pi-coding-agent`) extension that routes one natural-l
   node --experimental-strip-types --check extensions/consensflow.ts   # syntax-check the .ts
   pi --no-extensions -e . --no-session --offline -p "ask @nope hi"    # headless load+route smoke (no model/auth)
   ```
-  The smoke command errors with "Unknown participant" — that proves the extension loaded and routed without a model call. (It creates a stray `./.consensflow/`; `rm -rf` it after.)
+  The smoke command exits cleanly — that proves the extension loads/registers (a transpile or registration break surfaces at `-e .` load time). `-p` headless mode does not render extension messages, and an unknown `@name` is now handled gracefully rather than thrown, so a clean exit is the pass signal, not a visible error. (It creates a stray `./.consensflow/`; `rm -rf` it after.)
 - Keep changes in `lib/*.js` testable; the only TS is `extensions/consensflow.ts`.
 
 ## Load-bearing facts (easy to get wrong)
@@ -28,10 +28,11 @@ A **Pi** (`@earendil-works/pi-coding-agent`) extension that routes one natural-l
 - Advisory roles (`reviewer`/`council`/`knowledge`) are forced read-only by `effectiveToolsPolicy`; write flags must never reach them.
 - Any subprocess `--cwd` must validate as nested inside the workspace before spawning (`resolveInside`).
 - Participant replies persist as `custom_message` entries (not normal messages) and are surfaced into later participants' handoffs (cross-pollination).
+- Consent gate: the lead consults participants freely, but never acts on a participant's response or keeps a write-capable participant's file edits without user approval (unless pre-authorized). Source of truth: `cf_run_participant` description/promptSnippet, `skills/consensflow/SKILL.md`, and `prompts/cf-ask.md` — don't weaken one without the others.
 
 ## Audience
 
-Solo-use today (Gabriel only). Keep it clean enough to externalize cheaply, but skip distribution infra (multi-OS installers, telemetry, i18n) until there's a real second user.
+Solo-use today (single user). Keep it clean enough to externalize cheaply, but skip distribution infra (multi-OS installers, telemetry, i18n) until there's a real second user.
 
 ## Knowledge base
 

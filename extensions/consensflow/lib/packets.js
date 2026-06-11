@@ -37,7 +37,7 @@ export async function createPacket(input) {
 
   if (handoff && String(handoff).trim()) {
     sections.push("## Handoff — current session");
-    sections.push("The conversation so far between Gabriel (the user) and the Pi lead, most recent last. You were not part of it; use it as context for the request below.");
+    sections.push("The conversation so far between the user and the Pi lead, most recent last. You were not part of it; use it as context for the request below.");
     sections.push("");
     sections.push(String(handoff).trim());
     sections.push("");
@@ -57,6 +57,12 @@ export async function createPacket(input) {
     sections.push("```diff");
     sections.push(input.diff.patch || "[empty]");
     sections.push("```");
+    if (input.diff.cached && String(input.diff.cached).trim()) {
+      sections.push("### git diff --cached (staged)");
+      sections.push("```diff");
+      sections.push(input.diff.cached);
+      sections.push("```");
+    }
     sections.push("");
   }
 
@@ -66,7 +72,7 @@ export async function createPacket(input) {
     sections.push("");
   }
 
-  sections.push("## Message from Gabriel");
+  sections.push("## Message from the user");
   sections.push(taskForKind("ask", task));
   sections.push("");
   sections.push("Respond directly and conversationally, the way you would in a normal coding session. There is no required format.");
@@ -75,5 +81,5 @@ export async function createPacket(input) {
 }
 
 export function taskForKind(_kind, baseTask) {
-  return String(baseTask ?? "").trim() || "Respond to Gabriel's message.";
+  return String(baseTask ?? "").trim() || "Respond to the user's message.";
 }

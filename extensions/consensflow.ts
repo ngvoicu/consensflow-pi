@@ -1,7 +1,10 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { collectGitDiff } from "./consensflow/lib/artifacts.js";
+import { collectGitDiff, gitChangesDiffer } from "./consensflow/lib/artifacts.js";
 import { serializeTranscript } from "./consensflow/lib/handoff.js";
+import { decodeChatGptAccountId, generateImage, IMAGE_TRIGGER_DEFAULT, saveImagePng } from "./consensflow/lib/image.js";
 import { formatPresets, getPreset, listPresetIds, participantFromPreset } from "./consensflow/lib/presets.js";
 import {
   cfRoot,
@@ -10,11 +13,13 @@ import {
   getParticipant,
   loadCurrent,
   loadParticipants,
+  recordLatestRun,
   removeParticipant,
+  runsRoot,
   upsertParticipant,
 } from "./consensflow/lib/state.js";
-import { parseOptions, parseParticipantPrompt, slugify, tokenize } from "./consensflow/lib/utils.js";
-import { runNamedParticipant } from "./consensflow/lib/workflows.js";
+import { createId, parseOptions, parseParticipantPrompt, slugify, tokenize } from "./consensflow/lib/utils.js";
+import { effectiveToolsPolicy, runNamedParticipant } from "./consensflow/lib/workflows.js";
 
 const EXT = "consensflow";
 
@@ -27,8 +32,12 @@ export default async function consensflow(pi: ExtensionAPI) {
   pi.on("input", async (event, ctx) => {
     const parsed = await parseTypedPrompt(event.text, ctx);
     if (!parsed) return;
-    await ensureCfDirs(ctx.cwd);
-    await handleParticipantPrompt(parsed, ctx, pi, ctx.signal);
+    try {
+      await ensureCfDirs(ctx.cwd);
+      await handleParticipantPrompt(parsed, ctx, pi, ctx.signal);
+    } catch (error) {
+      reportCfError(pi, ctx, error);
+    }
     return { action: "handled" as const };
   });
 
@@ -62,8 +71,8 @@ export default async function consensflow(pi: ExtensionAPI) {
   pi.registerTool({
     name: "cf_run_participant",
     label: "CF Ask Participant",
-    description: "Send one natural-language prompt to one named ConsensFlow participant. The participant receives the current session as a handoff plus your prompt, runs with its configured tools, and returns an artifact.",
-    promptSnippet: "Send a natural-language prompt to exactly one named ConsensFlow participant, then use the returned artifact for your own synthesis.",
+    description: "Consult one named ConsensFlow participant as an advisor. It receives the current session as a handoff plus your prompt, runs with its configured tools, and returns its answer (or, if it is a write-capable participant, the changes it made). Use this freely and on your own initiative to get reviews, second opinions, questions, or help — you do not need the user's permission to consult. But do NOT apply, merge, commit, adopt, or otherwise act on what it returns — neither its advice nor a write-capable participant's file changes — without first showing the user (a summary plus your recommendation) and getting their approval, unless the user has already told you to proceed.",
+    promptSnippet: "Consult one named ConsensFlow participant as an advisor (asking is free — no user permission needed). Then report its answer to the user and get approval before acting on it: never apply a participant's advice or changes unprompted unless the user already said to proceed.",
     parameters: Type.Object({
       participant: Type.String({ description: "Participant name or @mention, e.g. @zeus" }),
       prompt: Type.String({ description: "Natural-language request for that participant" }),
@@ -75,9 +84,22 @@ export default async function consensflow(pi: ExtensionAPI) {
     async execute(_toolCallId, params, signal, onUpdate, ctx) {
       const participant = await getParticipant(ctx.cwd, params.participant);
       if (!participant) throw new Error(`Unknown participant: ${params.participant}`);
+      if (participant.kind === "image") {
+        onUpdate?.({ content: [{ type: "text", text: `Generating image with @${participant.id} (gpt-image-2)...` }] });
+        const r = await generateImageArtifact(ctx, participant, params.prompt, signal);
+        return {
+          content: [
+            { type: "text", text: imageSummary(participant, r) },
+            { type: "image", data: r.base64, mimeType: r.mimeType },
+          ],
+          details: { runId: r.runId, savedPath: r.savedPath, revisedPrompt: r.revisedPrompt, participant: { id: participant.id, kind: participant.kind } },
+        };
+      }
       onUpdate?.({ content: [{ type: "text", text: `Asking @${participant.id}...` }] });
       const includeDiff = params.includeLatestChanges ?? shouldIncludeLatestChanges(params.prompt);
       const diff = includeDiff ? await collectGitDiffForPacket(ctx.cwd, pi, signal) : undefined;
+      const writeCapable = effectiveToolsPolicy(participant) !== "readonly";
+      const before = writeCapable ? (diff ?? await safeCollectGitDiff(ctx.cwd, pi, signal)) : undefined;
       const result = await runNamedParticipant({
         cwd: ctx.cwd,
         participantRef: participant,
@@ -89,7 +111,8 @@ export default async function consensflow(pi: ExtensionAPI) {
         signal,
         timeoutMs: params.timeoutMs,
       });
-      return { content: [{ type: "text", text: renderRunResult(result) }], details: result };
+      if (writeCapable) result.changes = await captureWriteChanges(ctx.cwd, pi, before, result.runDir, signal);
+      return { content: [{ type: "text", text: `${renderRunResult(result)}\n\n${CONSULT_REMINDER}` }], details: result };
     },
   });
 
@@ -126,8 +149,12 @@ async function registerParticipantCommands(pi: ExtensionAPI) {
             ctx.ui.notify(`Usage: /${name} <prompt>`, "warning");
             return;
           }
-          await ensureCfDirs(ctx.cwd);
-          await handleParticipantPrompt({ participant: participant.id, prompt }, ctx, pi, ctx.signal);
+          try {
+            await ensureCfDirs(ctx.cwd);
+            await handleParticipantPrompt({ participant: participant.id, prompt }, ctx, pi, ctx.signal);
+          } catch (error) {
+            reportCfError(pi, ctx, error);
+          }
         },
       });
       taken.add(name);
@@ -168,9 +195,7 @@ async function handleCf(args: string, ctx: any, pi: ExtensionAPI) {
         return sendCfMessage(pi, helpText(), { command: "help" });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    ctx.ui.notify(`ConsensFlow error: ${message}`, "error");
-    sendCfMessage(pi, `# ConsensFlow error\n\n${message}`, { error: message });
+    reportCfError(pi, ctx, error);
   }
 }
 
@@ -191,20 +216,38 @@ async function handleStatus(ctx: any, pi: ExtensionAPI) {
 }
 
 async function handleDoctor(ctx: any, pi: ExtensionAPI) {
+  const KIND_BINARY: Record<string, string> = { pi: "pi", "claude-code": "claude", codex: "codex", opencode: "opencode" };
   const binaries = ["pi", "claude", "codex", "opencode"];
+  const participants = (await loadParticipants(ctx.cwd).catch(() => [])) as any[];
+  const neededBy: Record<string, string[]> = {};
+  for (const p of participants) {
+    const binary = KIND_BINARY[p.kind];
+    if (binary) (neededBy[binary] ??= []).push(`@${p.id}`);
+  }
   const rows = [];
   for (const binary of binaries) {
     const result = await pi.exec(binary, ["--version"], { timeout: 5000 });
-    rows.push({ binary, ok: result.code === 0, output: (result.stdout || result.stderr || "").trim() });
+    rows.push({ binary, ok: result.code === 0, output: (result.stdout || result.stderr || "").trim(), neededBy: neededBy[binary] ?? [] });
   }
-  const markdown = [
+  const imageParticipants = participants.filter((p) => p.kind === "image").map((p) => `@${p.id}`);
+  const missing = rows.filter((row) => !row.ok && row.neededBy.length > 0);
+  const lines = [
     "# ConsensFlow doctor",
     "",
     `Config root: ${configRoot()}`,
     "",
-    ...rows.map((row) => `- ${row.ok ? "✓" : "✗"} ${row.binary}: ${row.output || "not available"}`),
-  ].join("\n");
-  sendCfMessage(pi, markdown, { rows, configRoot: configRoot() });
+    ...rows.map((row) => {
+      const need = row.neededBy.length > 0 ? ` — needed by ${row.neededBy.join(", ")}` : " — not used by any participant";
+      return `- ${row.ok ? "✓" : "✗"} ${row.binary}: ${row.output || "not available"}${need}`;
+    }),
+  ];
+  if (imageParticipants.length > 0) {
+    lines.push("", `- image participants (${imageParticipants.join(", ")}) need an \`openai-codex\` login (\`/login\` → ChatGPT Plus/Pro), not a CLI binary.`);
+  }
+  if (missing.length > 0) {
+    lines.push("", "Missing engines that configured participants need:", ...missing.map((row) => `  - ${row.binary} (needed by ${row.neededBy.join(", ")})`));
+  }
+  sendCfMessage(pi, lines.join("\n"), { rows, imageParticipants, configRoot: configRoot() });
 }
 
 async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) {
@@ -236,7 +279,9 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
 
     // Add every preset at once.
     if (presetRef === "all") {
-      assertPresetOverrideFlags(parsed.flags);
+      // `--name`/`--id` would make every preset derive the same id and overwrite each other (saving
+      // one participant while reporting "Saved 24"). Only allow flags that apply uniformly to a bulk add.
+      assertAllowedFlags(parsed.flags, ["cwd", "timeoutMs", "description"], "preset add all");
       const participants = [];
       for (const presetId of listPresetIds()) {
         participants.push(await upsertParticipant(ctx.cwd, participantFromPreset(presetId, presetOverrides(parsed.flags))));
@@ -276,9 +321,12 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
   if (parsed.error) throw new Error(parsed.error);
   const participant = await getParticipant(ctx.cwd, parsed.participant);
   if (!participant) throw new Error(`Unknown participant: @${parsed.participant}`);
+  if (participant.kind === "image") return await runImageParticipant(participant, parsed.prompt, ctx, pi, signal);
   ctx.ui.notify(`Asking @${participant.id}...`, "info");
   const includeDiff = shouldIncludeLatestChanges(parsed.prompt);
   const diff = includeDiff ? await collectGitDiffForPacket(ctx.cwd, pi, signal) : undefined;
+  const writeCapable = effectiveToolsPolicy(participant) !== "readonly";
+  const before = writeCapable ? (diff ?? await safeCollectGitDiff(ctx.cwd, pi, signal)) : undefined;
   const result = await runNamedParticipant({
     cwd: ctx.cwd,
     participantRef: participant,
@@ -288,9 +336,63 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
     handoff: collectHandoff(ctx),
     signal,
   });
+  if (writeCapable) result.changes = await captureWriteChanges(ctx.cwd, pi, before, result.runDir, signal);
   // Record the prompt in details so later participants' handoffs can reconstruct this exchange
   // (the @mention input was "handled" and is never stored as a normal session message).
   sendCfMessage(pi, renderRunResult(result), { ...result, prompt: parsed.prompt });
+}
+
+// --- Image participants (kind: "image") ---------------------------------
+// Image generation doesn't fit the text-CLI runner: it calls the Codex Responses
+// backend (gpt-image-2) over HTTP — reusing the openai-codex login — and returns
+// an image. Handled here, not in runners.js, because it needs ctx.modelRegistry.
+// The image model gets the prompt verbatim (no packet/handoff).
+async function generateImageArtifact(ctx: any, participant: any, prompt: string, signal?: AbortSignal) {
+  const token = await ctx?.modelRegistry?.getApiKeyForProvider?.("openai-codex");
+  if (!token) {
+    throw new Error("No openai-codex login found. Run /login and pick ChatGPT Plus/Pro (Codex) to use image participants.");
+  }
+  const accountId = decodeChatGptAccountId(token);
+  await ensureCfDirs(ctx.cwd);
+  const runId = createId("image");
+  const runDir = path.join(runsRoot(ctx.cwd), runId);
+  await fs.mkdir(runDir, { recursive: true });
+  const triggerModel = participant.model || IMAGE_TRIGGER_DEFAULT;
+  const image = await generateImage({ token, accountId, prompt, triggerModel, signal });
+  const savedPath = await saveImagePng(image.base64, runDir, "image.png");
+  await fs.writeFile(
+    path.join(runDir, "result.json"),
+    `${JSON.stringify({ runId, savedPath, triggerModel, backend: "gpt-image-2", revisedPrompt: image.revisedPrompt, responseId: image.responseId, participant: { id: participant.id, kind: participant.kind } }, null, 2)}\n`,
+    "utf8",
+  );
+  await recordLatestRun(ctx.cwd, { runId, runDir, participant, kind: "image" });
+  return { runId, runDir, savedPath, mimeType: "image/png", base64: image.base64, revisedPrompt: image.revisedPrompt };
+}
+
+function imageSummary(participant: any, r: { savedPath: string; revisedPrompt?: string }) {
+  return [
+    `# @${participant.id}`,
+    "",
+    "Generated an image with **gpt-image-2** (via your openai-codex login).",
+    r.revisedPrompt ? `Revised prompt: ${r.revisedPrompt}` : undefined,
+    `Saved: ${r.savedPath}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function runImageParticipant(participant: any, prompt: string, ctx: any, pi: ExtensionAPI, signal?: AbortSignal) {
+  ctx.ui.notify(`Generating image with @${participant.id} (gpt-image-2)...`, "info");
+  const r = await generateImageArtifact(ctx, participant, prompt, signal);
+  pi.sendMessage({
+    customType: EXT,
+    content: [
+      { type: "text", text: imageSummary(participant, r) },
+      { type: "image", data: r.base64, mimeType: r.mimeType },
+    ],
+    display: true,
+    details: { runId: r.runId, runDir: r.runDir, savedPath: r.savedPath, revisedPrompt: r.revisedPrompt, participant, prompt, kind: "image" },
+  });
 }
 
 const HANDOFF_MAX_BYTES = 120 * 1024;
@@ -333,6 +435,47 @@ function shouldIncludeLatestChanges(prompt: string) {
 
 async function collectGitDiffForPacket(cwd: string, pi: ExtensionAPI, signal?: AbortSignal) {
   return await collectGitDiff(cwd, (command, args, options = {}) => pi.exec(command, args, { ...options, signal, timeout: options.timeout ?? 10_000 }));
+}
+
+// Snapshot the working tree without ever throwing: a missing git binary (or an aborted exec) must
+// not block a write-capable run from starting. A missing before-snapshot makes captureWriteChanges
+// over-report (changed=true), which is the safe direction for a consent gate.
+async function safeCollectGitDiff(cwd: string, pi: ExtensionAPI, signal?: AbortSignal) {
+  try {
+    return await collectGitDiffForPacket(cwd, pi, signal);
+  } catch {
+    return undefined;
+  }
+}
+
+// After a write-capable run, snapshot the workspace so the lead can summarize what changed before
+// keeping it (the consent gate). Detection (gitChangesDiffer) compares status + patch + stat +
+// cached so it catches new (untracked) files and staged-only edits, not just unstaged tracked
+// changes. git-tracked tree only — edits outside the repo won't all show. Capture failure must
+// never discard the participant's output, so it degrades to a sentinel.
+async function captureWriteChanges(cwd: string, pi: ExtensionAPI, before: any, runDir: string, signal?: AbortSignal) {
+  let after;
+  try {
+    after = await collectGitDiffForPacket(cwd, pi, signal);
+  } catch {
+    return { changed: true, captureError: true };
+  }
+  if (!after) return undefined;
+  const changed = gitChangesDiffer(before, after);
+  // Prefer the unstaged patch for the saved diff; fall back to the staged (cached) diff. Neither
+  // captures untracked-file contents — the status list below still names them for review.
+  const savablePatch = after.patch && String(after.patch).trim() ? after.patch : after.cached && String(after.cached).trim() ? after.cached : "";
+  let savedPath: string | undefined;
+  if (changed && savablePatch) {
+    try {
+      const target = path.join(runDir, "post-run-changes.diff");
+      await fs.writeFile(target, savablePatch, "utf8");
+      savedPath = target;
+    } catch {
+      savedPath = undefined;
+    }
+  }
+  return { changed, status: after.status, stat: after.stat, savedPath };
 }
 
 const PRESET_OVERRIDE_FLAGS = ["name", "id", "cwd", "timeoutMs", "description"];
@@ -398,7 +541,7 @@ function addUsage() {
     "Usage:",
     "  /cf participants add <preset> [--name <name>]        # from a preset, optionally renamed",
     "  /cf participants add all                              # every preset",
-    "  /cf participants add --name <name> --kind <pi|claude-code|codex|opencode> --model <model> [--effort <e>] [--thinking <t>] [--roles <r>] [--tools <readonly|workspace-write|full-auto>] [--cwd <subdir>]",
+    "  /cf participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--thinking <t>] [--roles <r>] [--tools <readonly|workspace-write|full-auto>] [--cwd <subdir>]",
     "",
     `Presets: ${listPresetIds().join(", ")}`,
   ].join("\n");
@@ -432,15 +575,49 @@ function formatParticipantLine(p: any) {
   const cwd = p.cwd ? ` cwd=${p.cwd}` : "";
   const skills = p.kind === "pi" ? ` skills=${p.skillsPolicy ?? "default"}` : "";
   const preset = p.preset ? ` preset=${p.preset}` : "";
-  return `- @${p.id} (${p.kind}${model}${effort}${cwd}${skills}${preset}) roles=${(p.roles ?? []).join(",") || "-"} tools=${p.toolsPolicy}`;
+  // Show the policy actually used at runtime: an advisory role saved with a write policy still runs
+  // read-only (effectiveToolsPolicy), and the listing should reflect that, not the misleading config.
+  const effective = effectiveToolsPolicy(p);
+  const tools = effective === p.toolsPolicy ? `tools=${p.toolsPolicy}` : `tools=${effective} (advisory; configured ${p.toolsPolicy})`;
+  const head = `- @${p.id} (${p.kind}${model}${effort}${cwd}${skills}${preset}) roles=${(p.roles ?? []).join(",") || "-"} ${tools}`;
+  return p.description ? `${head}\n    ${p.description}` : head;
 }
 
+const CONSULT_REMINDER = "_Reminder: summarize this for the user with your recommendation, and get their approval before applying it (unless they already authorized you to proceed)._";
+
 function renderRunResult(result: any) {
-  return [`# @${result.participant.id}`, "", `Run: ${result.runId}`, `Exit: ${result.exitCode}${result.timedOut ? " (timed out)" : ""}`, `Artifacts: ${result.runDir}`, "", result.output].join("\n");
+  const writeCapable = effectiveToolsPolicy(result.participant) !== "readonly";
+  const lines = [`# @${result.participant.id}`, "", `Run: ${result.runId}`, `Exit: ${result.exitCode}${result.timedOut ? " (timed out)" : ""}`, `Artifacts: ${result.runDir}`];
+  if (writeCapable) lines.push("", "> Write-capable run: this participant could edit files and run commands. Review its changes before keeping or building on them.");
+  lines.push("", result.output);
+  if (result.changes) lines.push("", renderChanges(result.changes));
+  return lines.join("\n");
+}
+
+function renderChanges(changes: any) {
+  if (changes.captureError) {
+    return "_Could not capture workspace changes after this run (git unavailable or aborted). Inspect the workspace and the run artifacts manually before keeping anything._";
+  }
+  if (!changes.changed) return "_No git-tracked changes detected from this run._";
+  const parts = ["## Changes on disk after this run (review before keeping)"];
+  if (changes.status && String(changes.status).trim()) parts.push("", "### git status --short", "```", String(changes.status).trim(), "```");
+  if (changes.stat && String(changes.stat).trim()) parts.push("", "### git diff --stat", "```", String(changes.stat).trim(), "```");
+  if (changes.savedPath) parts.push("", `Full diff saved to \`${changes.savedPath}\`.`);
+  parts.push("", "_git-tracked tree only; may include pre-existing uncommitted changes._");
+  return parts.join("\n");
 }
 
 function sendCfMessage(pi: ExtensionAPI, content: string, details?: any) {
   pi.sendMessage({ customType: EXT, content, display: true, details });
+}
+
+// Single error surface for every entry path (the /cf router, the @mention input handler, and the
+// per-participant /<name> commands) so a typo or a runner/login failure always gets the same
+// polished message instead of throwing raw out of the input handler.
+function reportCfError(pi: ExtensionAPI, ctx: any, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  ctx.ui.notify(`ConsensFlow error: ${message}`, "error");
+  sendCfMessage(pi, `# ConsensFlow error\n\n${message}`, { error: message });
 }
 
 function helpText() {

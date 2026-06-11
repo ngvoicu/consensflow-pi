@@ -1,5 +1,8 @@
 const DEFAULT_MAX_BYTES = 120 * 1024;
 const TOOL_RESULT_MAX_CHARS = 1500;
+// Lead-initiated consultations (cf_run_participant) live only as tool results — there is no
+// custom_message for them. Keep them near-whole so they cross-pollinate like @mention replies.
+const CF_TOOL_RESULT_MAX_CHARS = 20000;
 const TOOL_ARGS_MAX_CHARS = 200;
 
 // Serialize the active session branch (as returned by sessionManager.getBranch(), which is ordered
@@ -53,7 +56,7 @@ export function serializeCustomMessage(entry) {
   if (entry.customType === "consensflow" && participantId) {
     const lines = [];
     const prompt = details.prompt && String(details.prompt).trim();
-    if (prompt) lines.push(`Gabriel → @${participantId}: ${prompt}`);
+    if (prompt) lines.push(`User → @${participantId}: ${prompt}`);
     const reply = String(details.output ?? flattenContent(entry.content) ?? "").trim();
     if (reply) lines.push(`@${participantId} replied:\n${reply}`);
     return lines.length ? lines.join("\n") : null;
@@ -67,14 +70,15 @@ export function serializeMessage(message) {
   switch (message.role) {
     case "user": {
       const text = flattenContent(message.content);
-      return text ? `Gabriel:\n${text}` : null;
+      return text ? `User:\n${text}` : null;
     }
     case "assistant": {
       const text = flattenContent(message.content);
       return text ? `Lead:\n${text}` : null;
     }
     case "toolResult": {
-      const body = truncate(flattenContent(message.content), TOOL_RESULT_MAX_CHARS);
+      const maxChars = message.toolName === "cf_run_participant" ? CF_TOOL_RESULT_MAX_CHARS : TOOL_RESULT_MAX_CHARS;
+      const body = truncate(flattenContent(message.content), maxChars);
       const label = message.toolName ? ` ${message.toolName}` : "";
       return body ? `Tool result${label}${message.isError ? " (error)" : ""}:\n${body}` : null;
     }

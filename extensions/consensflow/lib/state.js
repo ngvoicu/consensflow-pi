@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { nowIso, slugify, stripMention } from "./utils.js";
 
-export const PARTICIPANT_KINDS = ["pi", "claude-code", "codex", "opencode"];
+export const PARTICIPANT_KINDS = ["pi", "claude-code", "codex", "opencode", "image"];
 export const ROLE_VALUES = ["lead", "spec-creator", "reviewer", "implementer", "council", "knowledge"];
 export const TOOL_POLICIES = ["readonly", "workspace-write", "full-auto"];
 export const SKILLS_POLICIES = ["default", "none", "explicit"];
@@ -110,7 +110,16 @@ export function normalizeParticipant(input) {
     throw new Error(`Unsupported participant kind '${kind}'. Expected one of: ${PARTICIPANT_KINDS.join(", ")}`);
   }
 
-  const roles = normalizeList(input.roles, defaultRolesForKind(kind)).filter((role) => ROLE_VALUES.includes(role));
+  const requestedRoles = normalizeList(input.roles, defaultRolesForKind(kind));
+  const roles = requestedRoles.filter((role) => ROLE_VALUES.includes(role));
+  // A non-empty roles input that filters down to nothing is all-invalid: fail loudly rather than
+  // silently yield roles=[]. An empty roles set bypasses the advisory->readonly coercion in
+  // effectiveToolsPolicy, so `--roles bogus --tools workspace-write` would otherwise produce a
+  // misconfigured, unexpectedly write-capable participant. Omitted roles fall back to a valid
+  // default above, so this only fires on genuinely bad input.
+  if (requestedRoles.length > 0 && roles.length === 0) {
+    throw new Error(`roles must be one or more of: ${ROLE_VALUES.join(", ")}`);
+  }
   const toolsPolicy = normalizeEnum(input.toolsPolicy ?? input.tools ?? input.toolPolicy, TOOL_POLICIES, "readonly", "toolsPolicy");
   const skillsPolicy = normalizeEnum(input.skillsPolicy ?? input.skills, SKILLS_POLICIES, "default", "skillsPolicy");
 
@@ -166,7 +175,7 @@ function assertUniqueParticipants(participants) {
 }
 
 export async function loadCurrent(cwd) {
-  return await readJson(currentPath(cwd), { schemaVersion: 1, activeSpecPath: undefined, latestRunId: undefined });
+  return await readJson(currentPath(cwd), { schemaVersion: 1, latestRunId: undefined });
 }
 
 export async function saveCurrent(cwd, patch) {

@@ -28,6 +28,7 @@ Core direction:
   - `handoff.js` — `serializeTranscript` (root→leaf, compaction-aware, byte-capped) + `custom_message` cross-pollination.
   - `workflows.js` — `effectiveToolsPolicy` (advisory→readonly guard) + `runNamedParticipant`.
   - `runners.js` — per-engine invocation (`pi`/`claude-code`/`codex`/`opencode`) + output normalization + spawn/timeout.
+  - `image.js` — `image`-kind generation: Codex Responses backend → gpt-image-2 (HTTP/SSE) + base64→PNG save. Pure helpers unit-tested.
   - `artifacts.js`, `utils.js` — git diff collection; tokenize/slugify/path-validation helpers.
 - `skills/consensflow/SKILL.md`, `prompts/cf-ask.md`, `docs/`, `tests/core.test.mjs`.
 
@@ -40,7 +41,7 @@ node --experimental-strip-types --check extensions/consensflow.ts   # syntax-che
 pi --no-extensions -e . --no-session --offline -p "ask @nope hi"    # headless load+route smoke (no model/auth)
 ```
 
-There is no local `node_modules` or `dist` — peer deps come from the host `pi` install. The smoke command proves the extension loads and routes (it errors with "Unknown participant", short-circuiting before any model call).
+There is no local `node_modules` or `dist` — peer deps come from the host `pi` install. The smoke command proves the extension loads and registers (a transpile or registration break surfaces at `-e .` load time). It exits cleanly: `-p` headless mode does not render extension messages, and an `ask @name` to an unknown participant is now handled gracefully rather than thrown (the consent/error path), so a clean exit — not a visible "Unknown participant" — is the pass signal.
 
 ## Conventions
 
@@ -50,7 +51,9 @@ There is no local `node_modules` or `dist` — peer deps come from the host `pi`
 - Cross-pollination: participant replies persist as `custom_message` entries (not normal messages); `serializeTranscript` surfaces ConsensFlow ones so later participants' handoffs include earlier `@participant` exchanges. The triggering prompt is carried in the message `details` because the `@mention` input is "handled" and never stored as a normal message.
 - Custom participant creation is supported; model/effort strings pass through to the runtime verbatim. Validation lives in `normalizeParticipant` (state.js).
 - Send to one participant at a time; reject multiple leading mentions unless the product direction changes explicitly.
-- Participants should respond to Gabriel's prompt as written; do not inject terms like grill/handoff/spec-review unless Gabriel used them.
-- Participants run with their configured tools. `effectiveToolsPolicy` (workflows.js) forces read-only when roles are purely advisory (reviewer/council/knowledge) — advisory roles must never receive write flags.
+- Participants should respond to the user's prompt as written; do not inject terms like grill/handoff/spec-review unless the user used them.
+- Participants run with their configured tools. `effectiveToolsPolicy` (workflows.js) forces read-only when roles are purely advisory (reviewer/council/knowledge) — advisory roles must never receive write flags. Enforcement is per engine (runners.js): codex `--sandbox read-only` (OS-level), claude `--allowedTools` + `--disallowedTools` deny list, pi `--tools` allowlist, opencode `OPENCODE_PERMISSION={"edit":"deny","bash":"deny"}` env (its defaults are allow). Claude/codex children also get `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` stripped so runs stay on the subscription logins.
+- Consent gate: consulting a participant is free and proactive, but the lead must never apply/keep a participant's response — or a write-capable participant's file edits — without explicit user approval, unless pre-authorized. The gate lives in `cf_run_participant`'s description/promptSnippet, `skills/consensflow/SKILL.md`, and `prompts/cf-ask.md`; keep them in sync when changing it.
+- Image participants (`kind: image`) bypass the CLI runner: handled in `consensflow.ts` (`runImageParticipant`/`generateImageArtifact`), which calls `image.js` with the `openai-codex` token from `ctx.modelRegistry` (a ctx method, not a host import — the no-host-import rule stays intact). They get the prompt only (no packet/handoff), save a PNG under `.consensflow/runs/<id>/`, and render inline via an image content block. `buildRunnerInvocation` throws on `image` as a loud backstop so it can never silently reach the CLI path.
 - Pi participants use `--mode json --no-session --no-extensions`; do not add `--no-skills` by default.
 - Keep command paths real end-to-end; no reachable stubs (tests exercise `lib/*.js`; the `.ts` is validated by the smoke command above).

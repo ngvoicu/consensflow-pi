@@ -20,6 +20,7 @@ Preset map:
 - **House team** (one reviewer per engine): `zeus`/`apollo` (Claude Code Opus 4.8), `athena` (Codex GPT 5.5), `iris` (Pi GPT 5.5), `luna` (OpenCode Kimi K2.6).
 - **Fast tier**: `hermod` (Claude Haiku), `loki` (Codex medium), `nike` (Pi Gemini Flash), `freya` (OpenCode DeepSeek Flash).
 - **Model zoo** (same OpenRouter models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`.
+- **Image**: `pygmalion` (kind=image) — generates a picture with gpt-image-2 via your openai-codex login.
 
 Run `/cf participants presets` for the full list with exact model strings.
 
@@ -40,7 +41,7 @@ Each participant has its own command (`/<name>`); a bare mention or the generic 
 There is no special grill command. Ask naturally:
 
 ```text
-@iris What questions should Gabriel answer before implementing this?
+@iris What questions should I answer before implementing this?
 ```
 
 ## Review latest changes
