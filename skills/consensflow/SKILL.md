@@ -59,10 +59,12 @@ Participants are configured globally under `~/.consensflow/participants.json` (s
     --roles implementer --tools workspace-write   # fully custom, write-capable
 ```
 
-Presets:
+Presets (all read-only reviewers; the same model+effort family exists on every engine that runs it):
 
-- **House team** (deep read-only reviewers, one per engine): `@zeus` / `@apollo` (Claude Code Opus 4.8, MAX / XHIGH), `@athena` (Codex GPT 5.5), `@iris` (Pi GPT 5.5), `@luna` (OpenCode Kimi K2.6).
-- **Fast/cheap tier** (quick gut-checks): `@hermod` (Claude Haiku 4.5), `@loki` (Codex GPT 5.5 medium), `@nike` (Pi Gemini 3.5 Flash), `@freya` (OpenCode DeepSeek V4 Flash).
+- **Opus 4.8**: `@zeus`/`@apollo`/`@artemis` (Claude Code max/xhigh/medium), `@kronos`/`@atlas` (Pi xhigh/medium, Anthropic auth), `@baldr`/`@vali` (OpenCode max/medium via OpenRouter).
+- **GPT 5.5**: `@athena`/`@perseus`/`@loki` (Codex xhigh/high/medium), `@iris`/`@hermes`/`@eos` (Pi xhigh/high/medium), `@forseti`/`@bragi`/`@ullr` (OpenCode xhigh/high/medium via OpenRouter).
+- **Deep open-weights**: `@luna` (OpenCode Kimi K2.6 max).
+- **Fast/cheap tier** (quick gut-checks): `@hermod` (Claude Haiku 4.5), `@nike`/`@sif` (Gemini 3.5 Flash on Pi/OpenCode), `@zephyros`/`@freya` (DeepSeek V4 Flash on Pi/OpenCode).
 - **Model zoo** (same OpenRouter models on two engines; Greek = pi, Norse = opencode): DeepSeek V4 Pro `@hades`/`@odin`, Gemini 3.1 Pro `@helios`/`@heimdall`, Grok 4.3 `@ares`/`@thor`, Qwen3.7 Max `@hephaestus`/`@tyr`, Llama 4 Maverick `@pan`/`@vidar`, Mistral Large `@aeolus`/`@njord`, MiniMax M3 `@metis`/`@mimir`.
 - **Image**: `@pygmalion` (kind=image) generates a picture with gpt-image-2 via your existing openai-codex login — prompt-only (no handoff), saved to `.consensflow/runs` and shown inline.
 

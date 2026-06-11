@@ -15,10 +15,12 @@ Participants are stored globally in `~/.consensflow/participants.json`. Add them
     --roles implementer --tools workspace-write   # fully custom, write-capable
 ```
 
-Preset map:
+Preset map (each model+effort family on every engine that runs it):
 
-- **House team** (one reviewer per engine): `zeus`/`apollo` (Claude Code Opus 4.8), `athena` (Codex GPT 5.5), `iris` (Pi GPT 5.5), `luna` (OpenCode Kimi K2.6).
-- **Fast tier**: `hermod` (Claude Haiku), `loki` (Codex medium), `nike` (Pi Gemini Flash), `freya` (OpenCode DeepSeek Flash).
+- **Opus 4.8**: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium), `baldr`/`vali` (opencode max/medium).
+- **GPT 5.5**: `athena`/`perseus`/`loki` (codex xhigh/high/medium), `iris`/`hermes`/`eos` (pi xhigh/high/medium), `forseti`/`bragi`/`ullr` (opencode xhigh/high/medium).
+- **Deep open-weights**: `luna` (OpenCode Kimi K2.6 max).
+- **Fast tier**: `hermod` (Claude Haiku), `nike`/`sif` (Gemini Flash on pi/opencode), `zephyros`/`freya` (DeepSeek Flash on pi/opencode).
 - **Model zoo** (same OpenRouter models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`.
 - **Image**: `pygmalion` (kind=image) — generates a picture with gpt-image-2 via your openai-codex login.
 

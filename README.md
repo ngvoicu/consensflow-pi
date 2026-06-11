@@ -111,42 +111,49 @@ See the presets:
 /cf participants presets
 ```
 
-**House team — one strong read-only reviewer per engine:**
+All presets in one view. The same model+effort family appears on **every tool that runs it**, so you can compare how different harnesses drive the same model. Effort means `--effort` on claude-code/codex, the `--thinking` level on pi, and the `--variant` on opencode.
 
-| Preset | Engine | Model | Effort |
-|---|---|---|---|
-| `@zeus`   | claude-code | `claude-opus-4-8` | max |
-| `@apollo` | claude-code | `claude-opus-4-8` | xhigh |
-| `@athena` | codex | `gpt-5.5` | xhigh |
-| `@iris`   | pi | `openai-codex/gpt-5.5` | thinking xhigh |
-| `@luna`   | opencode | `openrouter/moonshotai/kimi-k2.6` | max |
+| Preset | Tool | Model | Effort | Mode |
+|---|---|---|---|---|
+| `@zeus` | claude-code | `claude-opus-4-8` | max | read-only |
+| `@apollo` | claude-code | `claude-opus-4-8` | xhigh | read-only |
+| `@artemis` | claude-code | `claude-opus-4-8` | medium | read-only |
+| `@kronos` | pi | `anthropic/claude-opus-4-8` | xhigh | read-only |
+| `@atlas` | pi | `anthropic/claude-opus-4-8` | medium | read-only |
+| `@baldr` | opencode | `openrouter/anthropic/claude-opus-4.8` | max | read-only |
+| `@vali` | opencode | `openrouter/anthropic/claude-opus-4.8` | medium | read-only |
+| `@athena` | codex | `gpt-5.5` | xhigh | read-only |
+| `@perseus` | codex | `gpt-5.5` | high | read-only |
+| `@loki` | codex | `gpt-5.5` | medium | read-only |
+| `@iris` | pi | `openai-codex/gpt-5.5` | xhigh | read-only |
+| `@hermes` | pi | `openai-codex/gpt-5.5` | high | read-only |
+| `@eos` | pi | `openai-codex/gpt-5.5` | medium | read-only |
+| `@forseti` | opencode | `openrouter/openai/gpt-5.5` | xhigh | read-only |
+| `@bragi` | opencode | `openrouter/openai/gpt-5.5` | high | read-only |
+| `@ullr` | opencode | `openrouter/openai/gpt-5.5` | medium | read-only |
+| `@luna` | opencode | `openrouter/moonshotai/kimi-k2.6` | max | read-only |
+| `@hermod` | claude-code | `claude-haiku-4-5` | low | read-only |
+| `@nike` | pi | `openrouter/google/gemini-3.5-flash` | low | read-only |
+| `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | — | read-only |
+| `@zephyros` | pi | `openrouter/deepseek/deepseek-v4-flash` | low | read-only |
+| `@freya` | opencode | `openrouter/deepseek/deepseek-v4-flash` | — | read-only |
+| `@hades` | pi | `openrouter/deepseek/deepseek-v4-pro` | high | read-only |
+| `@odin` | opencode | `openrouter/deepseek/deepseek-v4-pro` | — | read-only |
+| `@helios` | pi | `openrouter/google/gemini-3.1-pro-preview` | high | read-only |
+| `@heimdall` | opencode | `openrouter/google/gemini-3.1-pro-preview` | — | read-only |
+| `@ares` | pi | `openrouter/x-ai/grok-4.3` | high | read-only |
+| `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — | read-only |
+| `@hephaestus` | pi | `openrouter/qwen/qwen3.7-max` | high | read-only |
+| `@tyr` | opencode | `openrouter/qwen/qwen3.7-max` | — | read-only |
+| `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high | read-only |
+| `@vidar` | opencode | `openrouter/meta-llama/llama-4-maverick` | — | read-only |
+| `@aeolus` | pi | `openrouter/mistralai/mistral-large-2512` | high | read-only |
+| `@njord` | opencode | `openrouter/mistralai/mistral-large-2512` | — | read-only |
+| `@metis` | pi | `openrouter/minimax/minimax-m3` | high | read-only |
+| `@mimir` | opencode | `openrouter/minimax/minimax-m3` | — | read-only |
+| `@pygmalion` | image (Codex backend) | `gpt-image-2` | — | — |
 
-**Fast/cheap tier — quick gut-checks:**
-
-| Preset | Engine | Model |
-|---|---|---|
-| `@hermod` | claude-code | `claude-haiku-4-5` (low) |
-| `@loki`   | codex | `gpt-5.5` (medium) |
-| `@nike`   | pi | `openrouter/google/gemini-3.5-flash` |
-| `@freya`  | opencode | `openrouter/deepseek/deepseek-v4-flash` |
-
-**Model zoo — the same popular OpenRouter models on both engines (Greek names = pi, Norse names = opencode):**
-
-| Model | via pi | via opencode |
-|---|---|---|
-| DeepSeek V4 Pro | `@hades` | `@odin` |
-| Gemini 3.1 Pro | `@helios` | `@heimdall` |
-| Grok 4.3 | `@ares` | `@thor` |
-| Qwen3.7 Max | `@hephaestus` | `@tyr` |
-| Llama 4 Maverick | `@pan` | `@vidar` |
-| Mistral Large | `@aeolus` | `@njord` |
-| MiniMax M3 | `@metis` | `@mimir` |
-
-**Image generation:**
-
-| Preset | Kind | Output |
-|---|---|---|
-| `@pygmalion` | image | gpt-image-2, via your Codex login |
+Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. All presets are read-only reviewers — for a write-capable participant, create a custom one (Step 2).
 
 Add one, all, or a renamed copy:
 

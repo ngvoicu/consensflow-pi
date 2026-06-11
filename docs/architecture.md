@@ -25,7 +25,7 @@ Participant config is global/user-level, created from presets or custom definiti
 ```text
 ~/.consensflow/participants.json
 /cf participants presets
-/cf participants add zeus|apollo|athena|iris|luna|all [--name <name>]
+/cf participants add <preset>|all [--name <name>]
 /cf participants add --name <name> --kind <kind> --model <model> [--roles <r>] [--tools <p>]
 ```
 
@@ -74,9 +74,11 @@ Image participants (`kind: image`) don't use a CLI runner — they call the Code
 
 Presets curate known-good model/effort combinations in `presets.js`; custom participants can supply any model string at creation. Either way the runtime passes the configured strings to the engine verbatim.
 
-Current preset roster:
+Current preset roster (read-only reviewers; each model+effort family on every engine that runs it):
 
-- House team: `zeus` / `apollo` (Claude Code Opus 4.8), `athena` (Codex GPT 5.5), `iris` (Pi GPT 5.5), `luna` (OpenCode Kimi K2.6)
-- Fast tier: `hermod` (Claude Haiku), `loki` (Codex medium), `nike` (Pi Gemini Flash), `freya` (OpenCode DeepSeek Flash)
+- Opus 4.8: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium, Anthropic provider), `baldr`/`vali` (opencode max/medium via OpenRouter)
+- GPT 5.5: `athena`/`perseus`/`loki` (codex xhigh/high/medium), `iris`/`hermes`/`eos` (pi xhigh/high/medium), `forseti`/`bragi`/`ullr` (opencode xhigh/high/medium via OpenRouter)
+- Deep open-weights: `luna` (OpenCode Kimi K2.6 max)
+- Fast tier: `hermod` (Claude Haiku), `nike`/`sif` (Gemini Flash on pi/opencode), `zephyros`/`freya` (DeepSeek Flash on pi/opencode)
 - Model zoo (same models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`
 - Image: `pygmalion` (kind=image) — gpt-image-2 via the Codex Responses backend, not a CLI

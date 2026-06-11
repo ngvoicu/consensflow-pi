@@ -110,8 +110,9 @@ test("createPacket gives write-capable participants a read-write mode line", asy
 
 test("participant presets expose the allowed creation list", () => {
   assert.deepEqual(listPresetIds(), [
-    "zeus", "apollo", "athena", "iris", "luna",
-    "hermod", "loki", "nike", "freya",
+    "zeus", "apollo", "artemis", "athena", "perseus", "iris", "hermes", "eos", "luna",
+    "kronos", "atlas", "baldr", "vali", "forseti", "bragi", "ullr",
+    "hermod", "loki", "nike", "freya", "zephyros", "sif",
     "hades", "helios", "ares", "hephaestus", "pan", "aeolus", "metis",
     "odin", "heimdall", "thor", "tyr", "vidar", "njord", "mimir",
     "pygmalion",
@@ -120,6 +121,12 @@ test("participant presets expose the allowed creation list", () => {
   assert.equal(getPreset("athena").model, "gpt-5.5");
   assert.equal(getPreset("iris").thinking, "xhigh");
   assert.equal(getPreset("pygmalion").kind, "image");
+  // The frontier matrix: same model+effort family on every engine that runs it.
+  assert.equal(getPreset("artemis").effort, "medium");
+  assert.equal(getPreset("perseus").effort, "high");
+  assert.equal(getPreset("kronos").model, "anthropic/claude-opus-4-8");
+  assert.equal(getPreset("baldr").model, "openrouter/anthropic/claude-opus-4.8");
+  assert.equal(getPreset("forseti").model, "openrouter/openai/gpt-5.5");
   const luna = participantFromPreset("luna", { cwd: "frontend", timeoutMs: 1234 });
   assert.equal(luna.id, "luna");
   assert.equal(luna.name, "Luna");
