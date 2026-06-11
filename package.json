@@ -12,6 +12,7 @@
     "agents"
   ],
   "files": [
+    "index.ts",
     "extensions",
     "skills",
     "prompts",
@@ -21,7 +22,7 @@
   ],
   "pi": {
     "extensions": [
-      "./extensions/consensflow.ts"
+      "./index.ts"
     ],
     "skills": [
       "./skills"

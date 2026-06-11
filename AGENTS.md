@@ -20,7 +20,7 @@ Core direction:
 
 ## Source layout
 
-- `extensions/consensflow.ts` — the only TypeScript file: extension factory (event handlers, `/cf` + per-participant commands, the `cf_*` tools), input routing, `collectHandoff`, and packet wiring. Loaded and transpiled by the host `pi` (no local build).
+- `index.ts` — the only TypeScript file and the extension entry (root `index.ts` so pi's extension list shows the bare package name): extension factory (event handlers, `/cf` + per-participant commands, the `cf_*` tools), input routing, `collectHandoff`, and packet wiring. Loaded and transpiled by the host `pi` (no local build).
 - `extensions/consensflow/lib/*.js` — plain JS, the unit-tested core:
   - `presets.js` — preset catalog + `participantFromPreset` (supports `--name`/`--id` rename).
   - `state.js` — global participant store + `normalizeParticipant` (validates kind/roles/policies).
@@ -37,7 +37,7 @@ Core direction:
 ```bash
 npm test                       # node --test tests/*.test.mjs  (lib only; .ts is not compiled here)
 npm run check                  # alias for npm test
-node --experimental-strip-types --check extensions/consensflow.ts   # syntax-check the .ts
+node --experimental-strip-types --check index.ts                    # syntax-check the .ts
 pi --no-extensions -e . --no-session --offline -p "ask @nope hi"    # headless load+route smoke (no model/auth)
 ```
 
@@ -54,6 +54,6 @@ There is no local `node_modules` or `dist` — peer deps come from the host `pi`
 - Participants should respond to the user's prompt as written; do not inject terms like grill/handoff/spec-review unless the user used them.
 - Participants run with their configured tools. `effectiveToolsPolicy` (workflows.js) forces read-only when roles are purely advisory (reviewer/council/knowledge) — advisory roles must never receive write flags. Enforcement is per engine (runners.js): codex `--sandbox read-only` (OS-level), claude `--allowedTools` + `--disallowedTools` deny list, pi `--tools` allowlist, opencode `OPENCODE_PERMISSION={"edit":"deny","bash":"deny"}` env (its defaults are allow). Claude/codex children also get `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` stripped so runs stay on the subscription logins.
 - Consent gate: consulting a participant is free and proactive, but the lead must never apply/keep a participant's response — or a write-capable participant's file edits — without explicit user approval, unless pre-authorized. The gate lives in `cf_run_participant`'s description/promptSnippet, `skills/consensflow/SKILL.md`, and `prompts/cf-ask.md`; keep them in sync when changing it.
-- Image participants (`kind: image`) bypass the CLI runner: handled in `consensflow.ts` (`runImageParticipant`/`generateImageArtifact`), which calls `image.js` with the `openai-codex` token from `ctx.modelRegistry` (a ctx method, not a host import — the no-host-import rule stays intact). They get the prompt only (no packet/handoff), save a PNG under `.consensflow/runs/<id>/`, and render inline via an image content block. `buildRunnerInvocation` throws on `image` as a loud backstop so it can never silently reach the CLI path.
+- Image participants (`kind: image`) bypass the CLI runner: handled in `index.ts` (`runImageParticipant`/`generateImageArtifact`), which calls `image.js` with the `openai-codex` token from `ctx.modelRegistry` (a ctx method, not a host import — the no-host-import rule stays intact). They get the prompt only (no packet/handoff), save a PNG under `.consensflow/runs/<id>/`, and render inline via an image content block. `buildRunnerInvocation` throws on `image` as a loud backstop so it can never silently reach the CLI path.
 - Pi participants use `--mode json --no-session --no-extensions`; do not add `--no-skills` by default.
 - Keep command paths real end-to-end; no reachable stubs (tests exercise `lib/*.js`; the `.ts` is validated by the smoke command above).

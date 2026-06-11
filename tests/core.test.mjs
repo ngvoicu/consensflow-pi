@@ -446,7 +446,7 @@ test("parseParticipantPrompt: ask/to verb prefixes and the ask-noise boundary", 
 });
 
 test("the cf_run_participant consent gate and name-neutrality stay locked in the extension source", async () => {
-  const src = await readFile(new URL("../extensions/consensflow.ts", import.meta.url), "utf8");
+  const src = await readFile(new URL("../index.ts", import.meta.url), "utf8");
   // The consent gate must stay in the tool description + promptSnippet (its load-bearing home).
   assert.match(src, /do NOT apply/);
   assert.match(src, /without first showing the user/);
@@ -458,13 +458,13 @@ test("the cf_run_participant consent gate and name-neutrality stay locked in the
 });
 
 test("every lib symbol the extension imports is actually exported (boundary smoke)", async () => {
-  const src = await readFile(new URL("../extensions/consensflow.ts", import.meta.url), "utf8");
-  const importRe = /import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+"(\.\/consensflow\/lib\/[^"]+)"/g;
+  const src = await readFile(new URL("../index.ts", import.meta.url), "utf8");
+  const importRe = /import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+"(\.\/extensions\/consensflow\/lib\/[^"]+)"/g;
   let match;
   let checked = 0;
   while ((match = importRe.exec(src))) {
     const symbols = match[1].split(",").map((s) => s.trim().split(/\s+as\s+/)[0].trim()).filter(Boolean);
-    const loaded = await import(match[2].replace("./consensflow/lib/", "../extensions/consensflow/lib/"));
+    const loaded = await import(match[2].replace("./extensions/", "../extensions/"));
     for (const symbol of symbols) {
       assert.notEqual(loaded[symbol], undefined, `${match[2]} must export ${symbol}`);
       checked += 1;

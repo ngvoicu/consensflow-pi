@@ -7,7 +7,7 @@ It deliberately avoids the old ACP/shared-transcript model and avoids hidden wor
 ## Layers
 
 ```text
-extensions/consensflow.ts        Pi API boundary: commands/tools/input interception
+index.ts                         Pi API boundary: commands/tools/input interception
 extensions/consensflow/lib/
   state.js                       global participant config + project artifact paths
   presets.js                     curated allowed participant presets

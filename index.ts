@@ -2,10 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { collectGitDiff, gitChangesDiffer } from "./consensflow/lib/artifacts.js";
-import { serializeTranscript } from "./consensflow/lib/handoff.js";
-import { decodeChatGptAccountId, generateImage, IMAGE_TRIGGER_DEFAULT, saveImagePng } from "./consensflow/lib/image.js";
-import { formatPresets, getPreset, listPresetIds, participantFromPreset } from "./consensflow/lib/presets.js";
+import { collectGitDiff, gitChangesDiffer } from "./extensions/consensflow/lib/artifacts.js";
+import { serializeTranscript } from "./extensions/consensflow/lib/handoff.js";
+import { decodeChatGptAccountId, generateImage, IMAGE_TRIGGER_DEFAULT, saveImagePng } from "./extensions/consensflow/lib/image.js";
+import { formatPresets, getPreset, listPresetIds, participantFromPreset } from "./extensions/consensflow/lib/presets.js";
 import {
   cfRoot,
   configRoot,
@@ -17,9 +17,9 @@ import {
   removeParticipant,
   runsRoot,
   upsertParticipant,
-} from "./consensflow/lib/state.js";
-import { createId, parseOptions, parseParticipantPrompt, slugify, tokenize } from "./consensflow/lib/utils.js";
-import { effectiveToolsPolicy, runNamedParticipant } from "./consensflow/lib/workflows.js";
+} from "./extensions/consensflow/lib/state.js";
+import { createId, parseOptions, parseParticipantPrompt, slugify, tokenize } from "./extensions/consensflow/lib/utils.js";
+import { effectiveToolsPolicy, runNamedParticipant } from "./extensions/consensflow/lib/workflows.js";
 
 const EXT = "consensflow";
 
