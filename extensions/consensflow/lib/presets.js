@@ -3,6 +3,48 @@ import { slugify, stripMention } from "./utils.js";
 const T = 900000;
 
 export const PARTICIPANT_PRESETS = [
+  // --- Claude Fable 5 — Anthropic's most capable model (priced above Opus).
+  // Muse names on claude-code; bard/storyteller names on the other engines.
+  {
+    preset: "calliope",
+    id: "calliope",
+    name: "Calliope",
+    label: "Claude Code Fable 5 MAX",
+    description: "Chief muse: Claude Fable 5 at max effort — the deepest reviewer money can buy. Turns can run many minutes.",
+    kind: "claude-code",
+    model: "claude-fable-5",
+    effort: "max",
+    roles: ["reviewer"],
+    toolsPolicy: "readonly",
+    timeoutMs: T,
+  },
+  {
+    preset: "clio",
+    id: "clio",
+    name: "Clio",
+    label: "Claude Code Fable 5 XHIGH",
+    description: "Muse of history: Claude Fable 5 at xhigh effort, the recommended tier for coding and agentic review.",
+    kind: "claude-code",
+    model: "claude-fable-5",
+    effort: "xhigh",
+    roles: ["reviewer"],
+    toolsPolicy: "readonly",
+    timeoutMs: T,
+  },
+  {
+    preset: "thalia",
+    id: "thalia",
+    name: "Thalia",
+    label: "Claude Code Fable 5 MEDIUM",
+    description: "Muse of comedy: Claude Fable 5 at medium effort for quicker takes from the top model.",
+    kind: "claude-code",
+    model: "claude-fable-5",
+    effort: "medium",
+    roles: ["reviewer"],
+    toolsPolicy: "readonly",
+    timeoutMs: T,
+  },
+
   // --- House team: a strong read-only reviewer per engine -----------------
   {
     preset: "zeus",
@@ -125,6 +167,61 @@ export const PARTICIPANT_PRESETS = [
   },
 
   // --- Frontier models on the other engines that run them ------------------
+  // Fable 5 on pi (anthropic provider) and OpenCode (OpenRouter). Both cap at xhigh.
+  {
+    preset: "orpheus",
+    id: "orpheus",
+    name: "Orpheus",
+    label: "Pi Fable 5 XHIGH (Anthropic)",
+    description: "The legendary bard: Pi-backed Claude Fable 5 with xhigh thinking; needs Anthropic auth in pi.",
+    kind: "pi",
+    model: "anthropic/claude-fable-5",
+    thinking: "xhigh",
+    skillsPolicy: "default",
+    roles: ["reviewer"],
+    toolsPolicy: "readonly",
+    timeoutMs: T,
+  },
+  {
+    preset: "erato",
+    id: "erato",
+    name: "Erato",
+    label: "Pi Fable 5 MEDIUM (Anthropic)",
+    description: "Muse of lyric poetry: Pi-backed Claude Fable 5 with medium thinking; needs Anthropic auth in pi.",
+    kind: "pi",
+    model: "anthropic/claude-fable-5",
+    thinking: "medium",
+    skillsPolicy: "default",
+    roles: ["reviewer"],
+    toolsPolicy: "readonly",
+    timeoutMs: T,
+  },
+  {
+    preset: "saga",
+    id: "saga",
+    name: "Saga",
+    label: "OpenCode Fable 5 XHIGH",
+    description: "Norse goddess of storytelling: OpenCode-backed Claude Fable 5 at xhigh variant (via OpenRouter).",
+    kind: "opencode",
+    model: "openrouter/anthropic/claude-fable-5",
+    effort: "xhigh",
+    roles: ["reviewer"],
+    toolsPolicy: "readonly",
+    timeoutMs: T,
+  },
+  {
+    preset: "kvasir",
+    id: "kvasir",
+    name: "Kvasir",
+    label: "OpenCode Fable 5 MEDIUM",
+    description: "Source of the mead of poetry: OpenCode-backed Claude Fable 5 at medium variant (via OpenRouter).",
+    kind: "opencode",
+    model: "openrouter/anthropic/claude-fable-5",
+    effort: "medium",
+    roles: ["reviewer"],
+    toolsPolicy: "readonly",
+    timeoutMs: T,
+  },
   // Opus 4.8 on pi (anthropic provider; pi's thinking ceiling is xhigh, no "max").
   {
     preset: "kronos",

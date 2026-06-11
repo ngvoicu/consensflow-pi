@@ -113,10 +113,17 @@ See the presets:
 
 All presets in one view. The same model+effort family appears on **every tool that runs it**, so you can compare how different harnesses drive the same model. Effort means `--effort` on claude-code/codex, the `--thinking` level on pi, and the `--variant` on opencode.
 
-Sorted by model, then effort (strongest first). Claude Opus 4.8 and GPT 5.5 lead; the rest are alphabetical.
+Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8, and GPT 5.5 lead; the rest are alphabetical.
 
 | Preset | Tool | Model | Effort | Mode |
 |---|---|---|---|---|
+| `@calliope` | claude-code | `claude-fable-5` | max | read-only |
+| `@clio` | claude-code | `claude-fable-5` | xhigh | read-only |
+| `@orpheus` | pi | `anthropic/claude-fable-5` | xhigh | read-only |
+| `@saga` | opencode | `openrouter/anthropic/claude-fable-5` | xhigh | read-only |
+| `@thalia` | claude-code | `claude-fable-5` | medium | read-only |
+| `@erato` | pi | `anthropic/claude-fable-5` | medium | read-only |
+| `@kvasir` | opencode | `openrouter/anthropic/claude-fable-5` | medium | read-only |
 | `@zeus` | claude-code | `claude-opus-4-8` | max | read-only |
 | `@apollo` | claude-code | `claude-opus-4-8` | xhigh | read-only |
 | `@kronos` | pi | `anthropic/claude-opus-4-8` | xhigh | read-only |
@@ -156,6 +163,8 @@ Sorted by model, then effort (strongest first). Claude Opus 4.8 and GPT 5.5 lead
 | `@pygmalion` | image (Codex backend) | `gpt-image-2` | — | — |
 
 Why some cells differ: `max` exists only on claude-code — pi's thinking scale and OpenRouter's effort scale both top out at `xhigh`, so that is the ceiling tier everywhere else. A `—` effort means the engine's catalog defines no effort variants for that model (it runs at the model's default reasoning).
+
+Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
 Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. All presets are read-only reviewers — for a write-capable participant, create a custom one (Step 2).
 

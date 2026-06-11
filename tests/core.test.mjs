@@ -110,7 +110,9 @@ test("createPacket gives write-capable participants a read-write mode line", asy
 
 test("participant presets expose the allowed creation list", () => {
   assert.deepEqual(listPresetIds(), [
+    "calliope", "clio", "thalia",
     "zeus", "apollo", "artemis", "athena", "perseus", "iris", "hermes", "eos", "luna",
+    "orpheus", "erato", "saga", "kvasir",
     "kronos", "atlas", "baldr", "vali", "forseti", "bragi", "ullr",
     "hermod", "loki", "nike", "freya", "zephyros", "sif",
     "hades", "helios", "ares", "hephaestus", "pan", "aeolus", "metis",
@@ -133,6 +135,12 @@ test("participant presets expose the allowed creation list", () => {
   assert.equal(getPreset("luna").effort, undefined);
   assert.equal(getPreset("heimdall").effort, "high");
   assert.equal(getPreset("sif").effort, "low");
+  // Fable 5 family follows the same rules: claude-code gets max, the rest cap at xhigh.
+  assert.equal(getPreset("calliope").effort, "max");
+  assert.equal(getPreset("calliope").model, "claude-fable-5");
+  assert.equal(getPreset("orpheus").model, "anthropic/claude-fable-5");
+  assert.equal(getPreset("saga").model, "openrouter/anthropic/claude-fable-5");
+  assert.equal(getPreset("saga").effort, "xhigh");
   const luna = participantFromPreset("luna", { cwd: "frontend", timeoutMs: 1234 });
   assert.equal(luna.id, "luna");
   assert.equal(luna.name, "Luna");

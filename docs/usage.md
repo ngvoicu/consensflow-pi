@@ -17,6 +17,7 @@ Participants are stored globally in `~/.consensflow/participants.json`. Add them
 
 Preset map (each model+effort family on every engine that runs it):
 
+- **Fable 5**: `calliope`/`clio`/`thalia` (claude-code max/xhigh/medium), `orpheus`/`erato` (pi xhigh/medium), `saga`/`kvasir` (opencode xhigh/medium).
 - **Opus 4.8**: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium), `baldr`/`vali` (opencode xhigh/medium).
 - **GPT 5.5**: `athena`/`perseus`/`loki` (codex xhigh/high/medium), `iris`/`hermes`/`eos` (pi xhigh/high/medium), `forseti`/`bragi`/`ullr` (opencode xhigh/high/medium).
 - **Deep open-weights**: `luna` (OpenCode Kimi K2.6).

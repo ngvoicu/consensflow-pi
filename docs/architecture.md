@@ -76,6 +76,7 @@ Presets curate known-good model/effort combinations in `presets.js`; custom part
 
 Current preset roster (read-only reviewers; each model+effort family on every engine that runs it):
 
+- Fable 5: `calliope`/`clio`/`thalia` (claude-code max/xhigh/medium), `orpheus`/`erato` (pi xhigh/medium, Anthropic provider), `saga`/`kvasir` (opencode xhigh/medium via OpenRouter)
 - Opus 4.8: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium, Anthropic provider), `baldr`/`vali` (opencode xhigh/medium via OpenRouter — xhigh is the effort ceiling everywhere outside claude-code)
 - GPT 5.5: `athena`/`perseus`/`loki` (codex xhigh/high/medium), `iris`/`hermes`/`eos` (pi xhigh/high/medium), `forseti`/`bragi`/`ullr` (opencode xhigh/high/medium via OpenRouter)
 - Deep open-weights: `luna` (OpenCode Kimi K2.6)
