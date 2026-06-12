@@ -94,16 +94,19 @@ export default async function consensflow(pi: ExtensionAPI) {
         };
       }
       onUpdate?.({ content: [{ type: "text", text: `Asking @${participant.id}...` }] });
+      const includeHandoff = params.includeHandoff ?? true;
+      const handoff = includeHandoff ? collectHandoff(ctx) : "";
       const result = await runNamedParticipant({
         cwd: ctx.cwd,
         participantRef: participant,
         kind: "ask",
         task: params.prompt,
-        handoff: (params.includeHandoff ?? true) ? collectHandoff(ctx) : "",
+        handoff,
         extraContext: params.context,
         signal,
         timeoutMs: params.timeoutMs,
       });
+      result.handoffSummary = summarizeHandoff(handoff, includeHandoff);
       return { content: [{ type: "text", text: `${renderRunResult(result)}\n\n${CONSULT_REMINDER}` }], details: result };
     },
   });
@@ -315,14 +318,16 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
   if (!participant) throw new Error(`Unknown participant: @${parsed.participant}`);
   if (participant.kind === "image") return await runImageParticipant(participant, parsed.prompt, ctx, pi, signal);
   ctx.ui.notify(`Asking @${participant.id}...`, "info");
+  const handoff = collectHandoff(ctx);
   const result = await runNamedParticipant({
     cwd: ctx.cwd,
     participantRef: participant,
     kind: "ask",
     task: parsed.prompt,
-    handoff: collectHandoff(ctx),
+    handoff,
     signal,
   });
+  result.handoffSummary = summarizeHandoff(handoff, true);
   // Record the prompt in details so later participants' handoffs can reconstruct this exchange
   // (the @mention input was "handled" and is never stored as a normal session message).
   sendCfMessage(pi, renderRunResult(result), { ...result, prompt: parsed.prompt });
@@ -522,9 +527,18 @@ function formatParticipantLine(p: any) {
 
 const CONSULT_REMINDER = "_Reminder: summarize this for the user with your recommendation, and get their approval before applying it (unless they already authorized you to proceed)._";
 
+// The run output reports what context rode along: a silently-empty handoff looks identical to a
+// full one from the participant's answer alone.
+function summarizeHandoff(handoff: string, included: boolean) {
+  if (!included) return "skipped (includeHandoff=false)";
+  if (!String(handoff ?? "").trim()) return "empty — no session history to hand off";
+  return `attached (${Math.max(1, Math.round(Buffer.byteLength(handoff, "utf8") / 1024))} KB)`;
+}
+
 function renderRunResult(result: any) {
   const writeCapable = effectiveToolsPolicy(result.participant) !== "readonly";
   const lines = [`# @${result.participant.id}`, "", `Run: ${result.runId}`, `Exit: ${result.exitCode}${result.timedOut ? " (timed out)" : ""}`, `Artifacts: ${result.runDir}`];
+  if (result.handoffSummary) lines.push(`Handoff: ${result.handoffSummary}`);
   if (writeCapable) lines.push("", "> Write-capable run: this participant could edit files and run commands. Inspect what changed in the workspace (e.g. `git status` / `git diff` in a repo) and review it before keeping or building on it.");
   lines.push("", result.output);
   return lines.join("\n");
