@@ -67,7 +67,7 @@ Presets (all read-only reviewers; the same model+effort family exists on every e
 - **Deep open-weights**: `@luna` (OpenCode Kimi K2.6).
 - **Fast/cheap tier** (quick gut-checks): `@hermod` (Claude Haiku 4.5), `@nike`/`@sif` (Gemini 3.5 Flash on Pi/OpenCode), `@zephyros`/`@freya` (DeepSeek V4 Flash on Pi/OpenCode).
 - **Model zoo** (same OpenRouter models on two engines; Greek = pi, Norse = opencode): DeepSeek V4 Pro `@hades`/`@odin`, Gemini 3.1 Pro `@helios`/`@heimdall`, Grok 4.3 `@ares`/`@thor`, Qwen3.7 Max `@hephaestus`/`@tyr`, Llama 4 Maverick `@pan`/`@vidar`, Mistral Large `@aeolus`/`@njord`, MiniMax M3 `@metis`/`@mimir`.
-- **Image**: `@pygmalion` (kind=image) generates a picture with gpt-image-2 via your existing openai-codex login — prompt-only (no handoff), saved to `.consensflow/runs` and shown inline.
+- **Image**: `@pygmalion` (kind=image) generates a picture with gpt-image-2 via your existing openai-codex login — prompt-only (no handoff), saved to `.consensflow-pi/runs` and shown inline.
 
 Run `/cf participants presets` for the full list. Model and effort strings pass through to the engine verbatim, so any identifier the engine accepts works.
 

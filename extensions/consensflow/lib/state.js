@@ -16,7 +16,7 @@ export function configRoot() {
 }
 
 export function cfRoot(cwd) {
-  return path.join(cwd, ".consensflow");
+  return path.join(cwd, ".consensflow-pi");
 }
 
 export function participantsPath(_cwd) {

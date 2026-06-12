@@ -32,7 +32,7 @@ Participant config is global/user-level, created from presets or custom definiti
 Run artifacts are workspace-local:
 
 ```text
-<workspace>/.consensflow/runs/<run-id>/
+<workspace>/.consensflow-pi/runs/<run-id>/
 ```
 
 ## Prompt flow
