@@ -14,7 +14,6 @@ extensions/consensflow/lib/
   packets.js                     scoped packet creation
   runners.js                     pi/claude/codex/opencode adapters
   workflows.js                   one-participant run helper
-  artifacts.js                   git diff/artifact helpers
   image.js                       gpt-image-2 generation for image-kind participants
 ```
 

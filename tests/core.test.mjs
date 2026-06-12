@@ -1,16 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { gitChangesDiffer } from "../extensions/consensflow/lib/artifacts.js";
 import { createPacket } from "../extensions/consensflow/lib/packets.js";
 import { getPreset, listPresetIds, PARTICIPANT_PRESETS, participantFromPreset } from "../extensions/consensflow/lib/presets.js";
 import { serializeTranscript } from "../extensions/consensflow/lib/handoff.js";
 import { buildRunnerInvocation, codexSandbox, effectiveTimeoutMs, normalizeProcessOutput, runParticipant, spawnWithInput, toolsForPi } from "../extensions/consensflow/lib/runners.js";
 import { getParticipant, loadParticipants, normalizeParticipant, removeParticipant, upsertParticipant } from "../extensions/consensflow/lib/state.js";
 import { effectiveToolsPolicy, participantForKind } from "../extensions/consensflow/lib/workflows.js";
-import { parseOptions, parseParticipantPrompt, slugify, tokenize } from "../extensions/consensflow/lib/utils.js";
+import { parseOptions, parseParticipantPrompt, resolveInside, slugify, tokenize } from "../extensions/consensflow/lib/utils.js";
 import { buildImageRequestBody, decodeChatGptAccountId, extractImageFromEvents, saveImagePng } from "../extensions/consensflow/lib/image.js";
 
 async function withTempDir(fn) {
@@ -79,14 +78,12 @@ test("createPacket is conversational, mode-aware, and carries handoff + diff", a
       kind: "ask",
       task: "Review the latest changes",
       handoff: "User:\nhi\n\nLead:\nworking on the packet",
-      diff: { status: " M README.md", stat: "README.md | 2 +", patch: "diff --git a/README.md b/README.md" },
     });
     assert.match(packet, /## Message from the user/);
     assert.match(packet, /Review the latest changes/);
     assert.match(packet, /Read-only: you can inspect the workspace/);
     assert.match(packet, /## Handoff — current session/);
     assert.match(packet, /working on the packet/);
-    assert.match(packet, /Latest workspace changes/);
     // The rigid reviewer template is gone.
     assert.doesNotMatch(packet, /Required output format/);
     assert.doesNotMatch(packet, /1\. Direct answer/);
@@ -546,19 +543,48 @@ test("image path safety: runner backstop throws and extractImageFromEvents handl
   assert.equal(extractImageFromEvents([]).base64, undefined);
 });
 
-test("gitChangesDiffer detects untracked + staged + re-edit changes a plain `git diff` would miss", () => {
-  const base = { status: "", patch: "", stat: "", cached: "" };
-  // Identical snapshots -> no change.
-  assert.equal(gitChangesDiffer(base, { ...base }), false);
-  // A new (untracked) file: git diff/stat stay empty; only `git status --short` shows it.
-  assert.equal(gitChangesDiffer(base, { ...base, status: "?? new.js" }), true);
-  // A staged edit: unstaged patch empty, cached holds the diff.
-  assert.equal(gitChangesDiffer(base, { ...base, status: "M  a.js", cached: "diff --git a/a.js b/a.js" }), true);
-  // Re-editing an already-dirty file: status line is identical, but the patch content grows.
-  const before = { status: " M a.js", patch: "@@ -1 +1 @@\n-x\n+y", stat: " a.js | 2 +-", cached: "" };
-  const after = { status: " M a.js", patch: "@@ -1 +2 @@\n-x\n+y\n+z", stat: " a.js | 3 +-", cached: "" };
-  assert.equal(gitChangesDiffer(before, after), true);
-  // Missing snapshots: no `after` -> cannot tell (false); no `before` -> assume changed (true).
-  assert.equal(gitChangesDiffer(before, null), false);
-  assert.equal(gitChangesDiffer(null, after), true);
+test("resolveInside rejects symlinked escapes, not just lexical ../ ones", async () => {
+  await withTempDir(async (dir) => {
+    const ws = path.join(dir, "ws");
+    const outside = path.join(dir, "outside");
+    await mkdir(path.join(ws, "sub"), { recursive: true });
+    await mkdir(outside, { recursive: true });
+    await symlink(outside, path.join(ws, "link"), "dir");
+    assert.throws(() => resolveInside(ws, "../outside"), /escapes workspace/);
+    // ws/link points outside the workspace: lexical containment passes, realpath must not.
+    assert.throws(() => resolveInside(ws, "link"), /escapes workspace/);
+    // Normal subdirs — existing or not-yet-created — still resolve.
+    assert.ok(resolveInside(ws, "sub"));
+    assert.ok(resolveInside(ws, "brand-new/dir"));
+  });
 });
+
+test("upsertParticipant rejects a name slug that collides with another participant's id", async () => {
+  await withTempDir(async (dir) => {
+    await upsertParticipant(dir, { name: "Zeus", kind: "claude-code", model: "claude-opus-4-8" });
+    await upsertParticipant(dir, { name: "Athena", kind: "codex", model: "gpt-5.5" });
+    // getParticipant resolves by id OR name slug, so a second participant whose NAME slugifies
+    // to an existing id would shadow it — must be rejected, not silently saved.
+    await assert.rejects(upsertParticipant(dir, { id: "athena2", name: "Zeus", kind: "codex", model: "gpt-5.5" }), /collides/);
+    // Updating the same participant in place stays allowed.
+    await upsertParticipant(dir, { name: "Zeus", kind: "claude-code", model: "claude-opus-4-8", effort: "max" });
+  });
+});
+
+// lib parity with the consensflow-cc sibling: these files are kept byte-identical by convention
+// (see AGENTS.md). A divergence means a fix landed in one project and silently missed the other.
+test("parity: shared lib files stay identical with the consensflow-cc sibling", async (t) => {
+  const siblingLib = new URL("../../consensflow-cc/lib/", import.meta.url);
+  for (const file of ["utils.js", "workflows.js"]) {
+    let sibling;
+    try {
+      sibling = await readFile(new URL(file, siblingLib), "utf8");
+    } catch {
+      t.skip("consensflow-cc sibling checkout not present");
+      return;
+    }
+    const ours = await readFile(new URL(`../extensions/consensflow/lib/${file}`, import.meta.url), "utf8");
+    assert.equal(ours, sibling, `${file} diverged from consensflow-cc — change both or document the delta in both AGENTS.md files`);
+  }
+});
+

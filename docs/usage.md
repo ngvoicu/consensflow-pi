@@ -36,7 +36,7 @@ Each participant has its own command (`/<name>`); a bare mention or the generic 
 ```text
 /zeus What do you think about this approach?
 @zeus What do you think about this approach?
-/cf @athena Review the latest changes and tell me only blockers.
+/cf @athena Review the auth flow in src/login.ts and tell me only blockers.
 ```
 
 ## Ask for questions
@@ -47,13 +47,13 @@ There is no special grill command. Ask naturally:
 @iris What questions should I answer before implementing this?
 ```
 
-## Review latest changes
+## Review a diff
+
+Participants don't get your git state automatically — paste the relevant diff (or name the files) in the prompt:
 
 ```text
-@luna Review the latest changes and list blockers, test gaps, and risky assumptions.
+@luna Review this diff and list blockers, test gaps, and risky assumptions: [paste git diff output]
 ```
-
-When the prompt mentions latest changes/diff/patch/implementation, ConsensFlow includes git status/diff context when available.
 
 ## One-at-a-time comparison
 

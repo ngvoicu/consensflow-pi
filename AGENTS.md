@@ -29,7 +29,7 @@ Core direction:
   - `workflows.js` — `effectiveToolsPolicy` (advisory→readonly guard) + `runNamedParticipant`.
   - `runners.js` — per-engine invocation (`pi`/`claude-code`/`codex`/`opencode`) + output normalization + spawn/timeout.
   - `image.js` — `image`-kind generation: Codex Responses backend → gpt-image-2 (HTTP/SSE) + base64→PNG save. Pure helpers unit-tested.
-  - `artifacts.js`, `utils.js` — git diff collection; tokenize/slugify/path-validation helpers.
+  - `utils.js` — tokenize/slugify/path-validation helpers (`resolveInside` is realpath-checked).
 - `skills/consensflow/SKILL.md`, `prompts/cf-ask.md`, `docs/`, `tests/core.test.mjs`.
 
 ## Commands & verify

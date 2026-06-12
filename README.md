@@ -40,7 +40,6 @@ It builds a "packet" for @zeus:
    • mode line           (read-only — or read-write if you made it write-capable)
    • handoff             (a snapshot of THIS session + earlier @participant replies)
    • your question
-   • git status/diff      (only if your prompt mentions latest changes / diff / patch)
    ▼
 Runs @zeus as an isolated, one-shot subprocess:
    claude -p … --model claude-opus-4-8 --effort max   (read-only tools)
@@ -212,13 +211,13 @@ Three equivalent ways:
 A few real examples:
 
 ```text
-@athena Review the latest changes and list only blockers and test gaps.
+@athena Review the error handling in src/server.ts — blockers and test gaps only.
 @iris What questions should I answer before I start building this?
 @zeus Do you agree with Athena, or push back?     # he'll see Athena's earlier reply in the handoff
 ```
 
 - Mention **one** participant. `@zeus @athena …` is rejected on purpose.
-- Say **"latest changes"** (or diff / patch / changed files) and ConsensFlow attaches your `git status` + diff for context.
+- Participants don't get your git state automatically — when you want a diff reviewed, paste the relevant parts into the prompt (or have the Pi lead include them via the tool's `context` brief).
 - A stray `@something` that isn't a participant (like `@types/node`) is ignored and just goes to your Pi lead.
 
 ### Step 4 — Read the answer (and where it's saved)
@@ -233,7 +232,7 @@ The reply appears inline in Pi. Every run is also saved under the ConsensFlow ho
   result.json    # parsed answer + metadata
 ```
 
-A write-capable run also saves `post-run-changes.diff` — what changed on disk, for review before you keep it.
+After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it.
 
 Then you, the lead, decide: implement all of it, some of it, or none.
 
@@ -288,7 +287,7 @@ Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thin
 ## Good to know
 
 - **One-shot:** participants don't remember previous calls. Continuity comes from the handoff (re-sent each time), which now includes earlier `@participant` answers — so a later participant sees an earlier one's reply. Great for debate; if you want a genuinely *independent* opinion, ask that participant **first**, before others have replied.
-- **Isolated & safe:** each participant runs in its own subprocess, scoped to your workspace. A `--cwd` that escapes the workspace is rejected before launch. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself. Read-only is enforced with each engine's own mechanism: an OS sandbox for Codex, allow+deny tool lists for Claude Code, a read-only tool allowlist for Pi, and a deny-edit/bash permission override (`OPENCODE_PERMISSION`) for OpenCode.
+- **Isolated & safe:** each participant runs in its own one-shot subprocess, started in your workspace; a `--cwd` that escapes it is rejected before launch (realpath-checked). Isolation comes from each engine's tool policy — a true OS sandbox only for Codex — so treat read-only as policy enforcement, not a hard sandbox. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself. Read-only is enforced with each engine's own mechanism: an OS sandbox for Codex, allow+deny tool lists for Claude Code, a read-only tool allowlist for Pi, and a deny-edit/bash permission override (`OPENCODE_PERMISSION`) for OpenCode.
 - **You're always the lead.** ConsensFlow routes your question and shows you the answer — it never implements or keeps anything on its own. The lead consults freely, but summarizes a participant's response (or a write-capable participant's file edits) and asks before applying it, unless you've already told it to proceed.
 
 ---

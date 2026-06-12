@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { collectGitDiff, gitChangesDiffer } from "./extensions/consensflow/lib/artifacts.js";
 import { serializeTranscript } from "./extensions/consensflow/lib/handoff.js";
 import { decodeChatGptAccountId, generateImage, IMAGE_TRIGGER_DEFAULT, saveImagePng } from "./extensions/consensflow/lib/image.js";
 import { formatPresets, getPreset, listPresetIds, participantFromPreset } from "./extensions/consensflow/lib/presets.js";
@@ -71,14 +70,13 @@ export default async function consensflow(pi: ExtensionAPI) {
   pi.registerTool({
     name: "cf_run_participant",
     label: "CF Ask Participant",
-    description: "Consult one named ConsensFlow participant as an advisor. It receives the current session as a handoff plus your prompt, runs with its configured tools, and returns its answer (or, if it is a write-capable participant, the changes it made). Use this freely and on your own initiative to get reviews, second opinions, questions, or help — you do not need the user's permission to consult. But do NOT apply, merge, commit, adopt, or otherwise act on what it returns — neither its advice nor a write-capable participant's file changes — without first showing the user (a summary plus your recommendation) and getting their approval, unless the user has already told you to proceed.",
+    description: "Consult one named ConsensFlow participant as an advisor. It receives the current session as a handoff plus your prompt, runs with its configured tools, and returns its answer. Use this freely and on your own initiative to get reviews, second opinions, questions, or help — you do not need the user's permission to consult. But do NOT apply, merge, commit, adopt, or otherwise act on what it returns — neither its advice nor a write-capable participant's file changes — without first showing the user (a summary plus your recommendation) and getting their approval, unless the user has already told you to proceed.",
     promptSnippet: "Consult one named ConsensFlow participant as an advisor (asking is free — no user permission needed). Then report its answer to the user and get approval before acting on it: never apply a participant's advice or changes unprompted unless the user already said to proceed.",
     parameters: Type.Object({
       participant: Type.String({ description: "Participant name or @mention, e.g. @zeus" }),
       prompt: Type.String({ description: "Natural-language request for that participant" }),
       context: Type.Optional(Type.String({ description: "Optional focused note/brief added on top of the auto-included session handoff." })),
       includeHandoff: Type.Optional(Type.Boolean({ description: "Attach the current session transcript as context. Defaults to true." })),
-      includeLatestChanges: Type.Optional(Type.Boolean({ description: "Include git status/diff context. Defaults to a prompt heuristic." })),
       timeoutMs: Type.Optional(Type.Number({ description: "Optional timeout override" })),
     }),
     async execute(_toolCallId, params, signal, onUpdate, ctx) {
@@ -96,22 +94,16 @@ export default async function consensflow(pi: ExtensionAPI) {
         };
       }
       onUpdate?.({ content: [{ type: "text", text: `Asking @${participant.id}...` }] });
-      const includeDiff = params.includeLatestChanges ?? shouldIncludeLatestChanges(params.prompt);
-      const diff = includeDiff ? await collectGitDiffForPacket(ctx.cwd, pi, signal) : undefined;
-      const writeCapable = effectiveToolsPolicy(participant) !== "readonly";
-      const before = writeCapable ? (diff ?? await safeCollectGitDiff(ctx.cwd, pi, signal)) : undefined;
       const result = await runNamedParticipant({
         cwd: ctx.cwd,
         participantRef: participant,
         kind: "ask",
         task: params.prompt,
-        diff,
         handoff: (params.includeHandoff ?? true) ? collectHandoff(ctx) : "",
         extraContext: params.context,
         signal,
         timeoutMs: params.timeoutMs,
       });
-      if (writeCapable) result.changes = await captureWriteChanges(ctx.cwd, pi, before, result.runDir, signal);
       return { content: [{ type: "text", text: `${renderRunResult(result)}\n\n${CONSULT_REMINDER}` }], details: result };
     },
   });
@@ -323,20 +315,14 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
   if (!participant) throw new Error(`Unknown participant: @${parsed.participant}`);
   if (participant.kind === "image") return await runImageParticipant(participant, parsed.prompt, ctx, pi, signal);
   ctx.ui.notify(`Asking @${participant.id}...`, "info");
-  const includeDiff = shouldIncludeLatestChanges(parsed.prompt);
-  const diff = includeDiff ? await collectGitDiffForPacket(ctx.cwd, pi, signal) : undefined;
-  const writeCapable = effectiveToolsPolicy(participant) !== "readonly";
-  const before = writeCapable ? (diff ?? await safeCollectGitDiff(ctx.cwd, pi, signal)) : undefined;
   const result = await runNamedParticipant({
     cwd: ctx.cwd,
     participantRef: participant,
     kind: "ask",
     task: parsed.prompt,
-    diff,
     handoff: collectHandoff(ctx),
     signal,
   });
-  if (writeCapable) result.changes = await captureWriteChanges(ctx.cwd, pi, before, result.runDir, signal);
   // Record the prompt in details so later participants' handoffs can reconstruct this exchange
   // (the @mention input was "handled" and is never stored as a normal session message).
   sendCfMessage(pi, renderRunResult(result), { ...result, prompt: parsed.prompt });
@@ -427,55 +413,6 @@ async function parseTypedPrompt(text: string, ctx: any): Promise<ParticipantProm
 async function knownParticipantKeys(cwd: string): Promise<Set<string>> {
   const participants = await loadParticipants(cwd).catch(() => []);
   return new Set((participants as any[]).flatMap((p) => [p.id, slugify(p.name)]).filter(Boolean));
-}
-
-function shouldIncludeLatestChanges(prompt: string) {
-  return /\b(latest changes?|recent changes?|diff|git diff|patch|review changes?|changed files?|implementation)\b/i.test(prompt);
-}
-
-async function collectGitDiffForPacket(cwd: string, pi: ExtensionAPI, signal?: AbortSignal) {
-  return await collectGitDiff(cwd, (command, args, options = {}) => pi.exec(command, args, { ...options, signal, timeout: options.timeout ?? 10_000 }));
-}
-
-// Snapshot the working tree without ever throwing: a missing git binary (or an aborted exec) must
-// not block a write-capable run from starting. A missing before-snapshot makes captureWriteChanges
-// over-report (changed=true), which is the safe direction for a consent gate.
-async function safeCollectGitDiff(cwd: string, pi: ExtensionAPI, signal?: AbortSignal) {
-  try {
-    return await collectGitDiffForPacket(cwd, pi, signal);
-  } catch {
-    return undefined;
-  }
-}
-
-// After a write-capable run, snapshot the workspace so the lead can summarize what changed before
-// keeping it (the consent gate). Detection (gitChangesDiffer) compares status + patch + stat +
-// cached so it catches new (untracked) files and staged-only edits, not just unstaged tracked
-// changes. git-tracked tree only — edits outside the repo won't all show. Capture failure must
-// never discard the participant's output, so it degrades to a sentinel.
-async function captureWriteChanges(cwd: string, pi: ExtensionAPI, before: any, runDir: string, signal?: AbortSignal) {
-  let after;
-  try {
-    after = await collectGitDiffForPacket(cwd, pi, signal);
-  } catch {
-    return { changed: true, captureError: true };
-  }
-  if (!after) return undefined;
-  const changed = gitChangesDiffer(before, after);
-  // Prefer the unstaged patch for the saved diff; fall back to the staged (cached) diff. Neither
-  // captures untracked-file contents — the status list below still names them for review.
-  const savablePatch = after.patch && String(after.patch).trim() ? after.patch : after.cached && String(after.cached).trim() ? after.cached : "";
-  let savedPath: string | undefined;
-  if (changed && savablePatch) {
-    try {
-      const target = path.join(runDir, "post-run-changes.diff");
-      await fs.writeFile(target, savablePatch, "utf8");
-      savedPath = target;
-    } catch {
-      savedPath = undefined;
-    }
-  }
-  return { changed, status: after.status, stat: after.stat, savedPath };
 }
 
 const PRESET_OVERRIDE_FLAGS = ["name", "id", "cwd", "timeoutMs", "description"];
@@ -588,23 +525,9 @@ const CONSULT_REMINDER = "_Reminder: summarize this for the user with your recom
 function renderRunResult(result: any) {
   const writeCapable = effectiveToolsPolicy(result.participant) !== "readonly";
   const lines = [`# @${result.participant.id}`, "", `Run: ${result.runId}`, `Exit: ${result.exitCode}${result.timedOut ? " (timed out)" : ""}`, `Artifacts: ${result.runDir}`];
-  if (writeCapable) lines.push("", "> Write-capable run: this participant could edit files and run commands. Review its changes before keeping or building on them.");
+  if (writeCapable) lines.push("", "> Write-capable run: this participant could edit files and run commands. Inspect what changed in the workspace (e.g. `git status` / `git diff` in a repo) and review it before keeping or building on it.");
   lines.push("", result.output);
-  if (result.changes) lines.push("", renderChanges(result.changes));
   return lines.join("\n");
-}
-
-function renderChanges(changes: any) {
-  if (changes.captureError) {
-    return "_Could not capture workspace changes after this run (git unavailable or aborted). Inspect the workspace and the run artifacts manually before keeping anything._";
-  }
-  if (!changes.changed) return "_No git-tracked changes detected from this run._";
-  const parts = ["## Changes on disk after this run (review before keeping)"];
-  if (changes.status && String(changes.status).trim()) parts.push("", "### git status --short", "```", String(changes.status).trim(), "```");
-  if (changes.stat && String(changes.stat).trim()) parts.push("", "### git diff --stat", "```", String(changes.stat).trim(), "```");
-  if (changes.savedPath) parts.push("", `Full diff saved to \`${changes.savedPath}\`.`);
-  parts.push("", "_git-tracked tree only; may include pre-existing uncommitted changes._");
-  return parts.join("\n");
 }
 
 function sendCfMessage(pi: ExtensionAPI, content: string, details?: any) {
