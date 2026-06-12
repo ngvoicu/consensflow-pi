@@ -25,7 +25,7 @@ Participant config is global/user-level, created from presets or custom definiti
 ~/.consensflow/consensflow-pi/participants.json
 /cf participants presets
 /cf participants add <preset>|all [--name <name>]
-/cf participants add --name <name> --kind <kind> --model <model> [--roles <r>] [--tools <p>]
+/cf participants add --name <name> --kind <kind> --model <model> [--tools <p>]
 ```
 
 Run artifacts are workspace-keyed under the config home — never inside the project:
@@ -41,7 +41,7 @@ Run artifacts are workspace-keyed under the config home — never inside the pro
   -> input handler recognizes exactly one configured participant
   -> packet is written: identity + mode + session handoff + prompt
   -> runner launches the configured backend with its tools policy
-     (read-only unless the participant is write-capable; advisory roles forced read-only)
+     (read-only unless the participant was configured write-capable)
   -> stdout/stderr/result are saved
   -> answer is shown in Pi
 ```
@@ -54,7 +54,7 @@ Internally, every participant is treated like a subagent:
 
 - isolated child process
 - packet with a one-shot session handoff (snapshot), not a live/shared Pi transcript
-- explicit tool policy (configured; advisory roles coerced read-only)
+- explicit tool policy (configured; missing policy reads as read-only)
 - no memory between calls
 - artifact output
 
@@ -73,7 +73,7 @@ Image participants (`kind: image`) don't use a CLI runner — they call the Code
 
 Presets curate known-good model/effort combinations in `presets.js`; custom participants can supply any model string at creation. Either way the runtime passes the configured strings to the engine verbatim.
 
-Current preset roster (read-only reviewers; each model+effort family on every engine that runs it):
+Current preset roster (all read-only; each model+effort family on every engine that runs it):
 
 - Fable 5: `calliope`/`clio`/`euterpe`/`thalia` (claude-code max/xhigh/high/medium), `orpheus`/`linus`/`erato` (pi xhigh/high/medium, Anthropic provider), `saga`/`gunnlod`/`kvasir` (opencode xhigh/high/medium via OpenRouter)
 - Opus 4.8: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium, Anthropic provider), `baldr`/`vali` (opencode xhigh/medium via OpenRouter — xhigh is the effort ceiling everywhere outside claude-code)

@@ -36,7 +36,7 @@ ConsensFlow sees exactly one @mention  →  intercepts the message
    │
    ▼
 It builds a "packet" for @zeus:
-   • who @zeus is        (claude-code · claude-opus-4-8 · max · reviewer)
+   • who @zeus is        (claude-code · claude-opus-4-8 · max)
    • mode line           (read-only — or read-write if you made it write-capable)
    • handoff             (a snapshot of THIS session + earlier @participant replies)
    • your question
@@ -168,7 +168,7 @@ Why some cells differ: `max` exists only on claude-code — pi's thinking scale 
 
 Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
-Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. All presets are read-only reviewers — for a write-capable participant, create a custom one (Step 2).
+Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. All presets are read-only — for a write-capable participant, create a custom one (Step 2).
 
 Add one, all, or a renamed copy:
 
@@ -191,12 +191,12 @@ The popular models already ship as presets (the tables above), so usually you ju
 # Any OpenRouter model via Pi (reasoning via --thinking off | minimal | low | medium | high | xhigh)
 /cf participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
 
-# A write-capable implementer, not just a reviewer (OpenCode; effort maps to --variant)
+# A write-capable participant, not just a reviewer (OpenCode; effort maps to --variant)
 /cf participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.6 \
-    --effort max --roles implementer --tools workspace-write
+    --effort max --tools workspace-write
 ```
 
-> **Read-only vs write.** By default a participant is a **reviewer** and can only read. To let one actually edit files and run commands, give it a non-advisory role and a write policy: `--roles implementer --tools workspace-write` (or `full-auto`). Advisory roles (`reviewer` / `council` / `knowledge`) are *always* forced read-only, even if you pass a write flag.
+> **Read-only vs write.** By default a participant can only read. To let one actually edit files and run commands, pass `--tools workspace-write` (or `full-auto`) — write access is never implicit.
 
 ### Step 3 — Ask a participant
 
@@ -292,7 +292,7 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 /cf participants add <preset> [--name N] [--cwd subdir] [--timeoutMs ms]
 /cf participants add all
 /cf participants add --name N --kind <pi|claude-code|codex|opencode|image> --model M \
-     [--effort e | --thinking t] [--roles r] [--tools readonly|workspace-write|full-auto] [--cwd subdir]
+     [--effort e | --thinking t] [--tools readonly|workspace-write|full-auto] [--cwd subdir]
 /cf participants show @name
 /cf participants remove @name
 
@@ -303,7 +303,7 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 ```
 
 Preset add flags: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`.
-Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thinking`, `--roles`, `--tools`, `--skills`, `--agent`, `--maxTurns`.
+Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thinking`, `--tools`, `--skills`, `--agent`, `--maxTurns`.
 
 ---
 

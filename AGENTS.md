@@ -13,7 +13,7 @@ Core direction:
 - Named participants are ephemeral one-shot subagent calls (no memory between calls).
 - Each call's packet embeds a serialized, capped handoff of the current session plus the prompt; participants stay isolated one-shot subprocesses — no live/shared transcript, no ACP.
 - Participant config is global/user-level under `~/.consensflow/consensflow-pi/participants.json` (per-tool store; the Claude Code sibling `consensflow-cc` keeps its own same-format roster under `~/.consensflow/consensflow-cc/`).
-- Participants come from curated presets (`extensions/consensflow/lib/presets.js`, renameable via `--name`) or fully custom definitions (`/cf participants add --name … --kind … --model … --roles … --tools …`).
+- Participants come from curated presets (`extensions/consensflow/lib/presets.js`, renameable via `--name`) or fully custom definitions (`/cf participants add --name … --kind … --model … --tools …`).
 - Each configured participant gets a dedicated `/<id>` command (registered at load); `@mention` and `/cf @name` also work.
 - Run artifacts are stored per workspace under the config home (`~/.consensflow/consensflow-pi/workspaces/<dir>-<hash>/`); ConsensFlow never creates a directory inside the project.
 - No hidden workflows: no spec-review command, no implementation-review command, no grill command, no council/fan-out by default.
@@ -23,10 +23,10 @@ Core direction:
 - `index.ts` — the only TypeScript file and the extension entry (root `index.ts` so pi's extension list shows the bare package name): extension factory (event handlers, `/cf` + per-participant commands, the `cf_*` tools), input routing, `collectHandoff`, and packet wiring. Loaded and transpiled by the host `pi` (no local build).
 - `extensions/consensflow/lib/*.js` — plain JS, the unit-tested core:
   - `presets.js` — preset catalog + `participantFromPreset` (supports `--name`/`--id` rename).
-  - `state.js` — global participant store + `normalizeParticipant` (validates kind/roles/policies).
+  - `state.js` — global participant store + `normalizeParticipant` (validates kind/policies).
   - `packets.js` — `createPacket` (conversational, mode-aware, handoff + prompt).
   - `handoff.js` — `serializeTranscript` (root→leaf, compaction-aware, byte-capped) + `custom_message` cross-pollination.
-  - `workflows.js` — `effectiveToolsPolicy` (advisory→readonly guard) + `runNamedParticipant`.
+  - `workflows.js` — `effectiveToolsPolicy` (readonly-by-default tools policy) + `runNamedParticipant`.
   - `runners.js` — per-engine invocation (`pi`/`claude-code`/`codex`/`opencode`) + output normalization + spawn/timeout.
   - `image.js` — `image`-kind generation: Codex Responses backend → gpt-image-2 (HTTP/SSE) + base64→PNG save. Pure helpers unit-tested.
   - `utils.js` — tokenize/slugify/path-validation helpers (`resolveInside` is realpath-checked).
@@ -52,7 +52,7 @@ There is no local `node_modules` or `dist` — peer deps come from the host `pi`
 - Custom participant creation is supported; model/effort strings pass through to the runtime verbatim. Validation lives in `normalizeParticipant` (state.js).
 - Send to one participant at a time; reject multiple leading mentions unless the product direction changes explicitly.
 - Participants should respond to the user's prompt as written; do not inject terms like grill/handoff/spec-review unless the user used them.
-- Participants run with their configured tools. `effectiveToolsPolicy` (workflows.js) forces read-only when roles are purely advisory (reviewer/council/knowledge) — advisory roles must never receive write flags. Enforcement is per engine (runners.js): codex `--sandbox read-only` (OS-level), claude `--allowedTools` + `--disallowedTools` deny list, pi `--tools` allowlist, opencode `OPENCODE_PERMISSION={"edit":"deny","bash":"deny"}` env (its defaults are allow). Claude/codex children also get `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` stripped so runs stay on the subscription logins.
+- Participants run with their configured tools. `effectiveToolsPolicy` (workflows.js) treats a missing policy as `readonly` — write access requires an explicit `workspace-write`/`full-auto`. Enforcement is per engine (runners.js): codex `--sandbox read-only` (OS-level), claude `--allowedTools` + `--disallowedTools` deny list, pi `--tools` allowlist, opencode `OPENCODE_PERMISSION={"edit":"deny","bash":"deny"}` env (its defaults are allow). Claude/codex children also get `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` stripped so runs stay on the subscription logins.
 - Consent gate: consulting a participant is free and proactive, but the lead must never apply/keep a participant's response — or a write-capable participant's file edits — without explicit user approval, unless pre-authorized. The gate lives in `cf_run_participant`'s description/promptSnippet, `skills/consensflow/SKILL.md`, and `prompts/cf-ask.md`; keep them in sync when changing it.
 - Image participants (`kind: image`) bypass the CLI runner: handled in `index.ts` (`runImageParticipant`/`generateImageArtifact`), which calls `image.js` with the `openai-codex` token from `ctx.modelRegistry` (a ctx method, not a host import — the no-host-import rule stays intact). They get the prompt only (no packet/handoff), save a PNG under the run dir, and render inline via an image content block. `buildRunnerInvocation` throws on `image` as a loud backstop so it can never silently reach the CLI path.
 - Pi participants use `--mode json --no-session --no-extensions`; do not add `--no-skills` by default.

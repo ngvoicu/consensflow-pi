@@ -12,7 +12,7 @@ Participants are stored globally in `~/.consensflow/consensflow-pi/participants.
 /cf participants add zeus --name Deepreview   # preset backend, custom name (-> @deepreview, /deepreview)
 /cf participants add all                      # every preset
 /cf participants add --name Builder --kind codex --model gpt-5.5 --effort high \
-    --roles implementer --tools workspace-write   # fully custom, write-capable
+    --tools workspace-write                       # fully custom, write-capable
 ```
 
 Preset map (each model+effort family on every engine that runs it):
@@ -27,7 +27,7 @@ Preset map (each model+effort family on every engine that runs it):
 
 Run `/cf participants presets` for the full list with exact model strings.
 
-Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--roles`, `--tools`, `--skills`, `--agent`, `--maxTurns`. A `workspace-write`/`full-auto` participant can edit and run; participants whose roles are purely advisory (reviewer/council/knowledge) are always read-only.
+Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--tools`, `--skills`, `--agent`, `--maxTurns`. Participants are read-only unless you pass `--tools workspace-write` or `full-auto` (then they can edit and run).
 
 ## Ask directly
 

@@ -25,7 +25,7 @@ A **Pi** (`@earendil-works/pi-coding-agent`) extension that routes one natural-l
 
 - `ctx.sessionManager.getBranch()` returns entries **root→leaf (oldest first) — do not reverse**. The `.d.ts` comment is misleading; verified in the host's `session-manager.js`.
 - **Never add a new runtime import of `@earendil-works/pi-coding-agent`** — read the transcript via the `ctx.sessionManager` methods already provided. (Type-only imports are fine.)
-- Advisory roles (`reviewer`/`council`/`knowledge`) are forced read-only by `effectiveToolsPolicy`; write flags must never reach them.
+- Participants are read-only by default: `effectiveToolsPolicy` treats a missing tools policy as `readonly`; only an explicit `workspace-write`/`full-auto` policy makes one write-capable.
 - Any subprocess `--cwd` must validate as nested inside the workspace before spawning (`resolveInside`).
 - Participant replies persist as `custom_message` entries (not normal messages) and are surfaced into later participants' handoffs (cross-pollination).
 - Consent gate: the lead consults participants freely, but never acts on a participant's response or keeps a write-capable participant's file edits without user approval (unless pre-authorized). Source of truth: `cf_run_participant` description/promptSnippet, `skills/consensflow/SKILL.md`, and `prompts/cf-ask.md` — don't weaken one without the others.
