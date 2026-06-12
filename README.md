@@ -238,6 +238,29 @@ Then you, the lead, decide: implement all of it, some of it, or none.
 
 ---
 
+### The handoff — what a participant actually sees
+
+Every run (unless skipped) embeds a **handoff**: a one-shot snapshot of your current session, built fresh at call time. Knowing what's in it tells you when to trust it and when to restate context yourself.
+
+```text
+Your live Pi session
+   │  serialized at call time: "User: … / Lead: …" turns, tool calls noted,
+   │  thinking redacted, earlier @participant replies kept near-whole
+   ▼
+capped at 120 KB (~30k tokens) — keeps the MOST RECENT tail,
+older history drops off behind a truncation marker
+   ▼
+embedded in the packet, between the mode line and your question
+```
+
+What that means in practice:
+
+- **It's a rendering, not the raw context.** The participant gets readable conversation text, never your model's actual context window — so a 1M-token lead session can never overflow a 200k participant.
+- **Short and medium sessions hand off essentially everything.** Only when the serialized text outgrows 120 KB does the oldest part fall away; a very long session hands off just the recent stretch.
+- **You can see what rode along.** Every run prints a `Handoff:` line — `attached (NN KB)` or `empty — no session history to hand off` — and `packet.md` in the run dir is byte-for-byte what the participant received.
+- **Cross-pollination is deliberate.** Earlier participants' answers are kept near-whole in the handoff, so `@zeus Do you agree with Athena?` works. For a genuinely independent opinion, ask that participant first.
+- **When old context matters, restate it.** If a decision from early in a long session is the point of your question, put it (or the relevant diff) in the prompt or the lead's `context` brief — don't assume it's still inside the tail.
+
 ### Images — the `@pygmalion` participant
 
 `@pygmalion` is an **image** participant: mention it with a description and it generates a picture (gpt-image-2, via your existing `openai-codex` login — no extra key) instead of returning text.
