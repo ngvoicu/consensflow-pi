@@ -18,7 +18,7 @@ A **Pi** (`@earendil-works/pi-coding-agent`) extension that routes one natural-l
   node --experimental-strip-types --check index.ts                    # syntax-check the .ts
   pi --no-extensions -e . --no-session --offline -p "ask @nope hi"    # headless load+route smoke (no model/auth)
   ```
-  The smoke command exits cleanly — that proves the extension loads/registers (a transpile or registration break surfaces at `-e .` load time). `-p` headless mode does not render extension messages, and an unknown `@name` is now handled gracefully rather than thrown, so a clean exit is the pass signal, not a visible error. (It creates a stray `./.consensflow-pi/`; `rm -rf` it after.)
+  The smoke command exits cleanly — that proves the extension loads/registers (a transpile or registration break surfaces at `-e .` load time). `-p` headless mode does not render extension messages, and an unknown `@name` is now handled gracefully rather than thrown, so a clean exit is the pass signal, not a visible error. (Run artifacts land under `~/.consensflow/consensflow-pi/workspaces/…`, never in the project.)
 - Keep changes in `lib/*.js` testable; the only TS is the root `index.ts` entry.
 
 ## Load-bearing facts (easy to get wrong)

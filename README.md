@@ -47,7 +47,7 @@ Runs @zeus as an isolated, one-shot subprocess:
    no memory of past calls, no live access to your session — just the packet
    ▼
 Saves everything as an artifact:
-   <workspace>/.consensflow-pi/runs/<run-id>/{packet.md, stdout.txt, stderr.txt, result.json}
+   ~/.consensflow/consensflow-pi/workspaces/<workspace>/runs/<run-id>/{packet.md, stdout.txt, stderr.txt, result.json}
    ▼
 Shows @zeus's answer back in your Pi session
    ▼
@@ -223,10 +223,10 @@ A few real examples:
 
 ### Step 4 — Read the answer (and where it's saved)
 
-The reply appears inline in Pi. Every run is also saved under the workspace:
+The reply appears inline in Pi. Every run is also saved under the ConsensFlow home — never inside your project:
 
 ```text
-<workspace>/.consensflow-pi/runs/<run-id>/
+~/.consensflow/consensflow-pi/workspaces/<workspace>/runs/<run-id>/
   packet.md      # exactly what the participant was sent
   stdout.txt     # raw engine output
   stderr.txt     # raw engine errors/progress
@@ -247,7 +247,7 @@ Then you, the lead, decide: implement all of it, some of it, or none.
 @pygmalion a minimalist logo for a terminal multi-agent tool — flat vector, navy + amber
 ```
 
-The PNG is saved to `.consensflow-pi/runs/<id>/image.png` and shown inline in Pi.
+The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 
 - Takes your **prompt only** — no session handoff (an image model can't use the transcript).
 - Needs a ChatGPT Plus/Pro (Codex) login (`/login` → openai-codex); you get a clear error if it's missing.
@@ -256,7 +256,7 @@ The PNG is saved to `.consensflow-pi/runs/<id>/image.png` and shown inline in Pi
 ## Where config and artifacts live
 
 - **Participants (global, per tool):** `~/.consensflow/consensflow-pi/participants.json` — set up `@zeus` once, use him from any project. The Claude Code sibling (consensflow-cc) keeps its own same-format roster under `~/.consensflow/consensflow-cc/`; copy entries between the two files to share them.
-- **Run artifacts (per project):** `<workspace>/.consensflow-pi/runs/…` — already in `.gitignore` here.
+- **Run artifacts (per workspace):** `~/.consensflow/consensflow-pi/workspaces/<workspace>-<hash>/runs/…` — stored in the home; nothing is ever created inside your project.
 
 ---
 

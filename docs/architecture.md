@@ -29,10 +29,10 @@ Participant config is global/user-level, created from presets or custom definiti
 /cf participants add --name <name> --kind <kind> --model <model> [--roles <r>] [--tools <p>]
 ```
 
-Run artifacts are workspace-local:
+Run artifacts are workspace-keyed under the config home — never inside the project:
 
 ```text
-<workspace>/.consensflow-pi/runs/<run-id>/
+~/.consensflow/consensflow-pi/workspaces/<workspace>-<hash>/runs/<run-id>/
 ```
 
 ## Prompt flow
