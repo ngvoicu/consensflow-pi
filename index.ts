@@ -305,7 +305,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
     }
 
     if (presetRef) {
-      throw new Error(`Unknown preset: ${presetRef}\n\nPresets: ${listPresetIds().join(", ")} (rename any with --name).\n\nOr create a custom participant:\n  /cf participants add --name <name> --kind <pi|claude-code|codex|opencode> --model <model> [--effort <e>] [--roles <r>] [--tools <readonly|workspace-write|full-auto>]`);
+      throw new Error(`Unknown preset: ${presetRef}\n\nPresets: ${listPresetIds().join(", ")} (rename any with --name).\n\nOr create a custom participant:\n  /cf participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--roles <r>] [--tools <readonly|workspace-write|full-auto>]`);
     }
     throw new Error(addUsage());
   }
