@@ -257,7 +257,7 @@ What that means in practice:
 
 - **It's a rendering, not the raw context.** The participant gets readable conversation text, never your model's actual context window — so a 1M-token lead session can never overflow a 200k participant.
 - **Short and medium sessions hand off essentially everything.** Only when the serialized text outgrows 120 KB does the oldest part fall away; a very long session hands off just the recent stretch.
-- **You can see what rode along.** Every run prints a `Handoff:` line — `attached (NN KB)` or `empty — no session history to hand off` — and `packet.md` in the run dir is byte-for-byte what the participant received.
+- **You can see what rode along.** A clean run shows just the answer; a run with no session history warns `Handoff: empty`. `packet.md` in the run dir is byte-for-byte what the participant received.
 - **Cross-pollination is deliberate.** Earlier participants' answers are kept near-whole in the handoff, so `@zeus Do you agree with Athena?` works. For a genuinely independent opinion, ask that participant first.
 - **When old context matters, restate it.** If a decision from early in a long session is the point of your question, put it (or the relevant diff) in the prompt or the lead's `context` brief — don't assume it's still inside the tail.
 

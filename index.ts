@@ -107,7 +107,7 @@ export default async function consensflow(pi: ExtensionAPI) {
         timeoutMs: params.timeoutMs,
       });
       result.handoffSummary = summarizeHandoff(handoff, includeHandoff);
-      return { content: [{ type: "text", text: `${renderRunResult(result)}\n\n${CONSULT_REMINDER}` }], details: result };
+      return { content: [{ type: "text", text: renderRunResult(result) }], details: result };
     },
   });
 
@@ -521,8 +521,6 @@ function formatParticipantLine(p: any) {
   return p.description ? `${head}\n    ${p.description}` : head;
 }
 
-const CONSULT_REMINDER = "_Reminder: summarize this for the user with your recommendation, and get their approval before applying it (unless they already authorized you to proceed)._";
-
 // The run output reports what context rode along: a silently-empty handoff looks identical to a
 // full one from the participant's answer alone.
 function summarizeHandoff(handoff: string, included: boolean) {
@@ -531,10 +529,16 @@ function summarizeHandoff(handoff: string, included: boolean) {
   return `attached (${Math.max(1, Math.round(Buffer.byteLength(handoff, "utf8") / 1024))} KB)`;
 }
 
+// Just the answer on a clean read-only run. Diagnostics appear only when they matter: the run
+// failed, the handoff was unexpectedly empty, or the participant could have written to the
+// workspace. Full metadata stays in result.json and the message details.
 function renderRunResult(result: any) {
   const writeCapable = effectiveToolsPolicy(result.participant) !== "readonly";
-  const lines = [`# @${result.participant.id}`, "", `Run: ${result.runId}`, `Exit: ${result.exitCode}${result.timedOut ? " (timed out)" : ""}`, `Artifacts: ${result.runDir}`];
-  if (result.handoffSummary) lines.push(`Handoff: ${result.handoffSummary}`);
+  const lines = [`# @${result.participant.id}`];
+  if (result.exitCode !== 0 || result.timedOut) {
+    lines.push("", `Run failed: exit ${result.exitCode}${result.timedOut ? " (timed out)" : ""} — artifacts: ${result.runDir}`);
+  }
+  if (result.handoffSummary?.startsWith("empty")) lines.push("", `Handoff: ${result.handoffSummary}`);
   if (writeCapable) lines.push("", "> Write-capable run: this participant could edit files and run commands. Inspect what changed in the workspace (e.g. `git status` / `git diff` in a repo) and review it before keeping or building on it.");
   lines.push("", result.output);
   return lines.join("\n");
