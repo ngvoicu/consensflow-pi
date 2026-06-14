@@ -153,7 +153,8 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | low | read-only |
 | `@ares` | pi | `openrouter/x-ai/grok-4.3` | high | read-only |
 | `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — | read-only |
-| `@luna` | opencode | `openrouter/moonshotai/kimi-k2.6` | — | read-only |
+| `@selene` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high | read-only |
+| `@luna` | opencode | `openrouter/moonshotai/kimi-k2.7-code` | — | read-only |
 | `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high | read-only |
 | `@vidar` | opencode | `openrouter/meta-llama/llama-4-maverick` | — | read-only |
 | `@metis` | pi | `openrouter/minimax/minimax-m3` | high | read-only |
@@ -192,7 +193,7 @@ The popular models already ship as presets (the tables above), so usually you ju
 /cf participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
 
 # A write-capable participant, not just a reviewer (OpenCode; effort maps to --variant)
-/cf participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.6 \
+/cf participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.7-code \
     --effort max --tools workspace-write
 ```
 
