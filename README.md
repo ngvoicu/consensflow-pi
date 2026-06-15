@@ -90,10 +90,8 @@ pi install ./consensflow-pi
 **Verify**
 
 ```text
-/cf doctor                # shows which engine CLIs are installed and working
-/cf status                # shows your configured participants
-/consensflow:doctor       # namespaced aliases match the Claude Code plugin
-/consensflow:status
+/consensflow:doctor       # shows which engine CLIs are installed and working
+/consensflow:status       # shows your configured participants
 ```
 
 **Uninstall** any time with `pi remove <source>` (the same URL or path you installed) — your participant config is left untouched.
@@ -109,7 +107,7 @@ Two ways: start from a **preset** (curated, known-good combos) or define a **cus
 See the presets:
 
 ```text
-/cf participants presets
+/consensflow:presets
 ```
 
 All presets in one view. The same model+effort family appears on **every tool that runs it**, so you can compare how different harnesses drive the same model. Effort means `--effort` on claude-code/codex, the `--thinking` level on pi, and the `--variant` on opencode.
@@ -176,12 +174,10 @@ Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on
 Add one, all, or a renamed copy:
 
 ```text
-/cf participants add zeus                    # add the zeus preset      → @zeus, /zeus
-/cf participants add all                     # add every preset at once
-/cf participants add zeus --name Deepreview  # same engine/model, your name → @deepreview
+/consensflow:participants add zeus                    # add the zeus preset      → @zeus
+/consensflow:participants add all                     # add every preset at once
+/consensflow:participants add zeus --name Deepreview  # same engine/model, your name → @deepreview
 ```
-
-After adding, run `/reload` so each participant gets its own `/<name>` command. (The `@name` form works immediately, no reload needed.)
 
 ### Step 2 — Going custom (any other model)
 
@@ -189,13 +185,13 @@ The popular models already ship as presets (the tables above), so usually you ju
 
 ```text
 # A different Claude model (claude-code effort: low | medium | high | xhigh | max)
-/cf participants add --name Sonnet --kind claude-code --model claude-sonnet-4-6 --effort high
+/consensflow:participants add --name Sonnet --kind claude-code --model claude-sonnet-4-6 --effort high
 
 # Any OpenRouter model via Pi (reasoning via --thinking off | minimal | low | medium | high | xhigh)
-/cf participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
+/consensflow:participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
 
 # A write-capable participant, not just a reviewer (OpenCode; effort maps to --variant)
-/cf participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.7-code \
+/consensflow:participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.7-code \
     --effort max --tools workspace-write
 ```
 
@@ -203,13 +199,11 @@ The popular models already ship as presets (the tables above), so usually you ju
 
 ### Step 3 — Ask a participant
 
-Four equivalent ways:
+Two equivalent ways:
 
 ```text
-@zeus What's the riskiest part of this design?                   # mention (anywhere in the line)
-/zeus What's the riskiest part of this design?                   # dedicated command (after /reload)
-/cf ask @zeus What's the riskiest part of this design?           # generic router
-/consensflow:cf ask @zeus What's the riskiest part of this design?  # namespaced router
+@zeus What's the riskiest part of this design?                      # mention (anywhere in the line)
+/consensflow:cf ask @zeus What's the riskiest part of this design?  # explicit router
 ```
 
 A few real examples:
@@ -280,7 +274,7 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 
 - Takes your **prompt only** — no session handoff (an image model can't use the transcript).
 - Needs a ChatGPT Plus/Pro (Codex) login (`/login` → openai-codex); you get a clear error if it's missing.
-- Roll your own: `/cf participants add --name <name> --kind image` (the model field is only the trigger; the backend is always gpt-image-2).
+- Roll your own: `/consensflow:participants add --name <name> --kind image` (the model field is only the trigger; the backend is always gpt-image-2).
 
 ## Where config and artifacts live
 
@@ -292,18 +286,6 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 ## Command reference
 
 ```text
-/cf status                       # your participants + latest run
-/cf doctor                       # which engine CLIs are installed
-/cf participants presets         # list the built-in presets
-/cf participants list            # list configured participants
-/cf participants add <preset> [--name N] [--cwd subdir] [--timeoutMs ms]
-/cf participants add all
-/cf participants add --name N --kind <pi|claude-code|codex|opencode|image> --model M \
-     [--effort e | --thinking t] [--tools readonly|workspace-write|full-auto] [--cwd subdir]
-/cf participants show @name
-/cf participants remove @name
-
-# Claude Code-style namespaced aliases in Pi:
 /consensflow:cf [status|doctor|participants <…>|run @name <prompt>|ask @name <prompt>|@name <prompt>]
 /consensflow:status
 /consensflow:doctor
@@ -311,10 +293,8 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 /consensflow:participants [list|presets|add|show|remove|add <…>]
 
 @name <prompt>                   # ask — mention anywhere in the line
-/name <prompt>                   # dedicated command (after /reload)
-/cf @name <prompt>               # generic router
-/cf ask @name <prompt>
-/consensflow:cf @name <prompt>   # namespaced generic router
+/consensflow:cf @name <prompt>   # explicit router
+/consensflow:cf ask @name <prompt>
 ```
 
 Preset add flags: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`.

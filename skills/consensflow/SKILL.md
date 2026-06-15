@@ -59,12 +59,12 @@ In short: ask freely, apply only with a green light.
 Participants are configured in the shared roster `~/.consensflow/participants.json` (set up once, use from any project, Pi, and the Claude Code sibling). There are no per-tool config roots. Participants come from curated presets or fully custom definitions:
 
 ```text
-/cf participants presets                      # list built-in presets
-/cf participants add zeus                      # add a preset            → @zeus, /zeus
-/cf participants add all                       # add every preset
-/cf participants add zeus --name Deepreview    # preset backend, renamed → @deepreview, /deepreview
-/cf participants add --name Builder --kind codex --model gpt-5.5 --effort high \
-    --tools workspace-write                       # fully custom, write-capable
+/consensflow:presets                            # list built-in presets
+/consensflow:participants add zeus              # add a preset            → @zeus
+/consensflow:participants add all               # add every preset
+/consensflow:participants add zeus --name Deepreview    # preset backend, renamed → @deepreview
+/consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high \
+    --tools workspace-write                     # fully custom, write-capable
 ```
 
 Presets (all read-only; the same model+effort family exists on every engine that runs it):
@@ -77,44 +77,24 @@ Presets (all read-only; the same model+effort family exists on every engine that
 - **Model zoo** (same OpenRouter models on two engines; Greek = pi, Norse = opencode): DeepSeek V4 Pro `@hades`/`@odin`, Gemini 3.1 Pro `@helios`/`@heimdall`, Grok 4.3 `@ares`/`@thor`, Qwen3.7 Max `@hephaestus`/`@tyr`, Llama 4 Maverick `@pan`/`@vidar`, Mistral Large `@aeolus`/`@njord`, MiniMax M3 `@metis`/`@mimir`.
 - **Image**: `@pygmalion` (kind=image) generates a picture with gpt-image-2 via your existing openai-codex login — prompt-only (no handoff), saved to the workspace's run dir under `~/.consensflow/workspaces/…` and shown inline.
 
-Run `/cf participants presets` or `/consensflow:presets` for the full list. Model and effort strings pass through to the engine verbatim, so any identifier the engine accepts works.
+Run `/consensflow:presets` for the full list. Model and effort strings pass through to the engine verbatim, so any identifier the engine accepts works.
 
 ## How to ask
 
-Each configured participant gets a dedicated `/<name>` command; `@name` (anywhere in the line), `/cf @name`, and the Claude Code-style `/consensflow:cf @name` also work:
+Use `@name` anywhere in the line, or the explicit `/consensflow:cf` router:
 
 ```text
-@zeus What's the riskiest part of this design?            # mention, anywhere in the line
-/zeus What's the riskiest part of this design?            # dedicated command (after /reload)
-/cf @zeus What's the riskiest part of this design?        # generic router
-/consensflow:cf @zeus What's the riskiest part of this design?  # namespaced router
+@zeus What's the riskiest part of this design?                  # mention, anywhere in the line
+/consensflow:cf @zeus What's the riskiest part of this design?  # explicit router
 ```
 
-A newly added participant's `/<name>` command becomes available after `/reload` in a running session; `@name` and `/cf @name` work immediately, and a fresh Pi session picks up the command automatically. A stray `@token` that is not a participant is ignored and goes to the lead as normal text.
+Pi intentionally matches Claude Code's slash-command surface: only `/consensflow:*` slash commands are registered; no unnamespaced shortcuts or per-participant slash commands. A stray `@token` that is not a participant is ignored and goes to the lead as normal text.
 
 From the lead, **prefer the `cf_run_participant` tool.** Pass an optional `context` brief on top of the auto-included session handoff to focus the participant on exactly what you want reviewed.
 
 ## Full command reference
 
-Pi-native commands:
-
-```text
-/cf status
-/cf doctor
-/cf participants list
-/cf participants presets
-/cf participants add <preset> [--name <name>] [--cwd <subdir>] [--timeoutMs <ms>]
-/cf participants add all
-/cf participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>|--thinking <t>] [--tools readonly|workspace-write|full-auto] [--cwd <subdir>]
-/cf participants show @name
-/cf participants remove @name
-/cf @name <prompt>
-/cf ask @name <prompt>
-@name <prompt>
-/name <prompt>                 # after /reload or a fresh session
-```
-
-Claude Code-style aliases also work in Pi:
+Pi exposes the same ConsensFlow slash commands as Claude Code:
 
 ```text
 /consensflow:cf [status|doctor|participants <…>|run @name <prompt>|ask @name <prompt>|@name <prompt>]
@@ -122,6 +102,9 @@ Claude Code-style aliases also work in Pi:
 /consensflow:doctor
 /consensflow:presets
 /consensflow:participants [list|presets|add|show|remove|add <…>]
+
+@name <prompt>                 # ask — mention anywhere in the line
+/consensflow:cf @name <prompt> # explicit router
 ```
 
 ## Tools available to the lead

@@ -665,5 +665,5 @@ export function formatPresetLine(preset) {
 }
 
 export function formatPresets() {
-  return ["# ConsensFlow participant presets", "", ...PARTICIPANT_PRESETS.map(formatPresetLine), "", "Add one with `/cf participants add <preset>`, or `/cf participants add all`."].join("\n");
+  return ["# ConsensFlow participant presets", "", ...PARTICIPANT_PRESETS.map(formatPresetLine), "", "Add one with `/consensflow:participants add <preset>`, or `/consensflow:participants add all`."].join("\n");
 }

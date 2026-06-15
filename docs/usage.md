@@ -7,12 +7,12 @@ ConsensFlow Pi uses natural-language prompts to one named participant at a time.
 Participants are stored in the shared roster `~/.consensflow/participants.json`, used by both consensflow-pi and consensflow-cc. Add a participant in either tool and it is visible in the other. There are no per-tool config roots.
 
 ```text
-/cf participants presets
-/cf participants add zeus                     # from a preset
-/cf participants add zeus --name Deepreview   # preset backend, custom name (-> @deepreview, /deepreview)
-/cf participants add all                      # every preset
-/cf participants add --name Builder --kind codex --model gpt-5.5 --effort high \
-    --tools workspace-write                       # fully custom, write-capable
+/consensflow:presets
+/consensflow:participants add zeus                     # from a preset
+/consensflow:participants add zeus --name Deepreview   # preset backend, custom name (-> @deepreview)
+/consensflow:participants add all                      # every preset
+/consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high \
+    --tools workspace-write                           # fully custom, write-capable
 ```
 
 Preset map (each model+effort family on every engine that runs it):
@@ -25,18 +25,16 @@ Preset map (each model+effort family on every engine that runs it):
 - **Model zoo** (same OpenRouter models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`.
 - **Image**: `pygmalion` (kind=image) — generates a picture with gpt-image-2 via your openai-codex login.
 
-Run `/cf participants presets` for the full list with exact model strings.
+Run `/consensflow:presets` for the full list with exact model strings.
 
 Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--tools`, `--skills`, `--agent`, `--maxTurns`. Participants are read-only unless you pass `--tools workspace-write` or `full-auto` (then they can edit and run).
 
 ## Ask directly
 
-Each participant has its own command (`/<name>`); a bare mention, the generic router, and the Claude Code-style namespaced router also work.
+Use a bare mention or the Claude Code-style `/consensflow:cf` router. Pi intentionally registers only `/consensflow:*` slash commands, not unnamespaced shortcuts or per-participant slash commands.
 
 ```text
-/zeus What do you think about this approach?
 @zeus What do you think about this approach?
-/cf @athena Review the auth flow in src/login.ts and tell me only blockers.
 /consensflow:cf @athena Review the auth flow in src/login.ts and tell me only blockers.
 ```
 

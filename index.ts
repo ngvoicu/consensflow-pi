@@ -109,7 +109,6 @@ export default async function consensflow(pi: ExtensionAPI) {
     },
   });
 
-  await registerParticipantCommands(pi);
 }
 
 type CoreCommandSpec = {
@@ -119,22 +118,7 @@ type CoreCommandSpec = {
 };
 
 const CORE_COMMANDS: CoreCommandSpec[] = [
-  {
-    name: "cf",
-    description: "ConsensFlow: manage named participants or send one prompt to one participant",
-    toCfArgs: (args) => args,
-  },
-  {
-    name: "consensflow",
-    description: "Alias for /cf",
-    toCfArgs: (args) => args,
-  },
-  {
-    name: "participants",
-    description: "ConsensFlow participant management",
-    toCfArgs: (args) => prefixedArgs("participants", args),
-  },
-  // Claude Code-style namespaced aliases, so Pi exposes the same discoverable command surface.
+  // Match Claude Code's discoverable command surface: only /consensflow:* commands.
   {
     name: "consensflow:cf",
     description: "ConsensFlow: manage named participants or send one prompt to one participant",
@@ -176,51 +160,6 @@ function prefixedArgs(prefix: string, args: string) {
   return trimmed ? `${prefix} ${trimmed}` : prefix;
 }
 
-const RESERVED_COMMAND_NAMES = new Set(CORE_COMMANDS.map((command) => command.name));
-
-// Register a dedicated `/<id>` command per configured participant so you can talk to them
-// directly (e.g. `/zeus ...`), instead of only the generic `/cf @zeus ...`. Participants are
-// global, so this runs once at load; new participants get their command after `/reload`.
-async function registerParticipantCommands(pi: ExtensionAPI) {
-  let participants: any[] = [];
-  try {
-    participants = await loadParticipants(process.cwd());
-  } catch {
-    return;
-  }
-  const taken = new Set(RESERVED_COMMAND_NAMES);
-  try {
-    for (const command of pi.getCommands()) taken.add(command.name);
-  } catch {
-    // getCommands may be unavailable mid-load; reserved set still guards the obvious clashes.
-  }
-  for (const participant of participants) {
-    const name = participant.id;
-    if (taken.has(name)) continue; // never shadow a built-in or another participant's command
-    try {
-      pi.registerCommand(name, {
-        description: `ConsensFlow: ask @${participant.id}${participant.model ? ` (${participant.kind} ${participant.model})` : ""}`,
-        handler: async (args, ctx) => {
-          const prompt = String(args ?? "").trim();
-          if (!prompt) {
-            ctx.ui.notify(`Usage: /${name} <prompt>`, "warning");
-            return;
-          }
-          try {
-            await ensureCfDirs(ctx.cwd);
-            await handleParticipantPrompt({ participant: participant.id, prompt }, ctx, pi, ctx.signal);
-          } catch (error) {
-            reportCfError(pi, ctx, error);
-          }
-        },
-      });
-      taken.add(name);
-    } catch {
-      // Skip on duplicate/registration error; @mention and /cf remain available as fallbacks.
-    }
-  }
-}
-
 async function handleCf(args: string, ctx: any, pi: ExtensionAPI) {
   try {
     await ensureCfDirs(ctx.cwd);
@@ -245,7 +184,7 @@ async function handleCf(args: string, ctx: any, pi: ExtensionAPI) {
       case "ask":
       case "to": {
         const parsed = parseParticipantPrompt(tokens, known);
-        if (!parsed) throw new Error("Usage: /cf @name <prompt> or /cf ask @name <prompt>");
+        if (!parsed) throw new Error("Usage: /consensflow:cf @name <prompt> or /consensflow:cf ask @name <prompt>");
         return await handleParticipantPrompt(parsed, ctx, pi, ctx.signal);
       }
       case "help":
@@ -321,14 +260,14 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
   }
   if (sub === "show") {
     const ref = tokens[0];
-    if (!ref) throw new Error("Usage: /cf participants show @name");
+    if (!ref) throw new Error("Usage: /consensflow:participants show @name");
     const participant = await getParticipant(ctx.cwd, ref);
     if (!participant) throw new Error(`Unknown participant: ${ref}`);
     return sendCfMessage(pi, `# ${participant.name}\n\n\`\`\`json\n${JSON.stringify(participant, null, 2)}\n\`\`\``, { participant });
   }
   if (sub === "remove" || sub === "rm") {
     const ref = tokens[0];
-    if (!ref) throw new Error("Usage: /cf participants remove @name");
+    if (!ref) throw new Error("Usage: /consensflow:participants remove @name");
     const removed = await removeParticipant(ctx.cwd, ref);
     ctx.ui.notify(removed ? `Removed ${ref}` : `No participant matched ${ref}`, removed ? "info" : "warning");
     return sendCfMessage(pi, removed ? `Removed ${ref}.` : `No participant matched ${ref}.`, { removed, ref });
@@ -347,7 +286,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
         participants.push(await upsertParticipant(ctx.cwd, participantFromPreset(presetId, presetOverrides(parsed.flags))));
       }
       ctx.ui.notify(`Saved ${participants.length} ConsensFlow participants`, "info");
-      return sendCfMessage(pi, `Saved presets in ${participantsPath(ctx.cwd)}.\n\n${participants.map(formatParticipantLine).join("\n")}\n\n${reloadHint()}`, { participants, ...storeDetails(ctx.cwd) });
+      return sendCfMessage(pi, `Saved presets in ${participantsPath(ctx.cwd)}.\n\n${participants.map(formatParticipantLine).join("\n")}`, { participants, ...storeDetails(ctx.cwd) });
     }
 
     // Preset path: positional names a known preset; --name optionally renames it.
@@ -356,25 +295,25 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
       const participant = await upsertParticipant(ctx.cwd, participantFromPreset(presetRef, presetOverrides(parsed.flags)));
       ctx.ui.notify(`Saved @${participant.id}`, "info");
       const from = participant.preset && participant.preset !== participant.id ? ` from preset \`${participant.preset}\`` : "";
-      return sendCfMessage(pi, `Saved participant @${participant.id}${from} in ${participantsPath(ctx.cwd)}.\n\n${formatParticipantLine(participant)}\n\n${reloadHint()}`, { participant, ...storeDetails(ctx.cwd) });
+      return sendCfMessage(pi, `Saved participant @${participant.id}${from} in ${participantsPath(ctx.cwd)}.\n\n${formatParticipantLine(participant)}`, { participant, ...storeDetails(ctx.cwd) });
     }
 
     // Custom path: explicit custom intent via --name or any backend flag. A positional serves as the name.
     if (stringFlag(parsed.flags.name) !== undefined || hasCustomShape(parsed.flags)) {
       assertCustomAddFlags(parsed.flags);
       const name = stringFlag(parsed.flags.name) ?? presetRef;
-      if (!name) throw new Error("Custom participant needs a name: /cf participants add --name <name> --kind <kind> --model <model> ...");
+      if (!name) throw new Error("Custom participant needs a name: /consensflow:participants add --name <name> --kind <kind> --model <model> ...");
       const participant = await upsertParticipant(ctx.cwd, customParticipantInput(name, parsed.flags));
       ctx.ui.notify(`Saved @${participant.id}`, "info");
-      return sendCfMessage(pi, `Saved custom participant @${participant.id} in ${participantsPath(ctx.cwd)}.\n\n${formatParticipantLine(participant)}\n\n${reloadHint()}`, { participant, ...storeDetails(ctx.cwd) });
+      return sendCfMessage(pi, `Saved custom participant @${participant.id} in ${participantsPath(ctx.cwd)}.\n\n${formatParticipantLine(participant)}`, { participant, ...storeDetails(ctx.cwd) });
     }
 
     if (presetRef) {
-      throw new Error(`Unknown preset: ${presetRef}\n\nPresets: ${listPresetIds().join(", ")} (rename any with --name).\n\nOr create a custom participant:\n  /cf participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--tools <readonly|workspace-write|full-auto>]`);
+      throw new Error(`Unknown preset: ${presetRef}\n\nPresets: ${listPresetIds().join(", ")} (rename any with --name).\n\nOr create a custom participant:\n  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--tools <readonly|workspace-write|full-auto>]`);
     }
     throw new Error(addUsage());
   }
-  throw new Error("Usage: /cf participants list|presets|add|show|remove");
+  throw new Error("Usage: /consensflow:participants list|presets|add|show|remove");
 }
 
 async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: ExtensionAPI, signal?: AbortSignal) {
@@ -538,16 +477,12 @@ function customParticipantInput(name: string, flags: Record<string, unknown>) {
   };
 }
 
-function reloadHint() {
-  return "Tip: run `/reload` so each participant gets its own `/<name>` slash command (or it loads next session).";
-}
-
 function addUsage() {
   return [
     "Usage:",
-    "  /cf participants add <preset> [--name <name>]        # from a preset, optionally renamed",
-    "  /cf participants add all                              # every preset",
-    "  /cf participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--thinking <t>] [--tools <readonly|workspace-write|full-auto>] [--cwd <subdir>]",
+    "  /consensflow:participants add <preset> [--name <name>]        # from a preset, optionally renamed",
+    "  /consensflow:participants add all                              # every preset",
+    "  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--thinking <t>] [--tools <readonly|workspace-write|full-auto>] [--cwd <subdir>]",
     "",
     `Presets: ${listPresetIds().join(", ")}`,
   ].join("\n");
@@ -621,9 +556,9 @@ function sendCfMessage(pi: ExtensionAPI, content: string, details?: any) {
   pi.sendMessage({ customType: EXT, content, display: true, details });
 }
 
-// Single error surface for every entry path (the /cf router, the @mention input handler, and the
-// per-participant /<name> commands) so a typo or a runner/login failure always gets the same
-// polished message instead of throwing raw out of the input handler.
+// Single error surface for every entry path (the /consensflow router and the @mention input
+// handler) so a typo or a runner/login failure always gets the same polished message instead of
+// throwing raw out of the input handler.
 function reportCfError(pi: ExtensionAPI, ctx: any, error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   ctx.ui.notify(`ConsensFlow error: ${message}`, "error");
@@ -636,13 +571,11 @@ function helpText() {
 Natural-language prompts to one participant at a time. Each participant gets the current
 session as a handoff plus your prompt, and answers conversationally.
 
-Ask a participant (all equivalent):
+Ask a participant:
 
 \`\`\`text
-/zeus What do you think about this approach?               # dedicated per-participant command
-@zeus What do you think about this approach?               # bare mention
-/cf @zeus What do you think about this approach?           # generic router
-/consensflow:cf @zeus What do you think about this approach?  # namespaced router
+@zeus What do you think about this approach?                  # bare mention
+/consensflow:cf @zeus What do you think about this approach?  # explicit router
 \`\`\`
 
 Add participants (shared across Pi and Claude Code, ${participantsPath(process.cwd())}):
@@ -650,7 +583,7 @@ Add participants (shared across Pi and Claude Code, ${participantsPath(process.c
 \`\`\`text
 /consensflow:presets                                    # list the curated presets
 /consensflow:participants add zeus                      # add a preset
-/consensflow:participants add zeus --name Deepreview    # preset backend, your own name -> /deepreview
+/consensflow:participants add zeus --name Deepreview    # preset backend, your own name -> @deepreview
 /consensflow:participants add all                       # every preset
 /consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high \\
     --tools workspace-write                             # fully custom, write-capable
@@ -658,10 +591,10 @@ Add participants (shared across Pi and Claude Code, ${participantsPath(process.c
 
 Admin commands:
 
-- \`/cf status\` (or \`/consensflow:status\`)
-- \`/cf doctor\` (or \`/consensflow:doctor\`)
-- \`/cf participants presets\` (or \`/consensflow:presets\`)
-- \`/cf participants list|presets|add|show|remove\` (or \`/consensflow:participants …\`)
+- \`/consensflow:status\`
+- \`/consensflow:doctor\`
+- \`/consensflow:presets\`
+- \`/consensflow:participants list|presets|add|show|remove\`
 
 Rules:
 
@@ -669,7 +602,7 @@ Rules:
 - Participants are read-only unless you explicitly configure \`--tools workspace-write\` or
   \`full-auto\` (a write-capable participant can edit files and run commands).
 - One-shot: participants do not remember previous calls; each call re-sends the current session handoff.
-- New participants get their \`/<name>\` command after \`/reload\` or next session; \`@name\` works immediately.
+- New participants are addressed with \`@name\` or \`/consensflow:cf @name …\`; no per-participant slash commands are registered.
 - The current Pi session remains the lead and decides what to implement.
 `;
 }

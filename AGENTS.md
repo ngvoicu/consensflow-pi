@@ -13,14 +13,14 @@ Core direction:
 - Named participants are ephemeral one-shot subagent calls (no memory between calls).
 - Each call's packet embeds a serialized, capped handoff of the current session plus the prompt; participants stay isolated one-shot subprocesses — no live/shared transcript, no ACP.
 - Participant config is global/user-level and **shared across both host tools** at `~/.consensflow/participants.json` — define a participant once and use it from pi *and* the Claude Code sibling (consensflow-cc). There are no per-tool config roots; run artifacts also live under `~/.consensflow/workspaces/…`.
-- Participants come from curated presets (`extensions/consensflow/lib/presets.js`, renameable via `--name`) or fully custom definitions (`/cf participants add --name … --kind … --model … --tools …`).
-- Each configured participant gets a dedicated `/<id>` command (registered at load); `@mention` and `/cf @name` also work.
+- Participants come from curated presets (`extensions/consensflow/lib/presets.js`, renameable via `--name`) or fully custom definitions (`/consensflow:participants add --name … --kind … --model … --tools …`).
+- Pi intentionally matches the Claude Code slash-command surface: only `/consensflow:*` commands are registered. `@mention` works for prompt routing; no unnamespaced shortcut commands or per-participant slash commands.
 - Run artifacts are stored per workspace under the config home (`~/.consensflow/workspaces/<dir>-<hash>/`); ConsensFlow never creates a directory inside the project.
 - No hidden workflows: no spec-review command, no implementation-review command, no grill command, no council/fan-out by default.
 
 ## Source layout
 
-- `index.ts` — the only TypeScript file and the extension entry (root `index.ts` so pi's extension list shows the bare package name): extension factory (event handlers, `/cf` + per-participant commands, the `cf_*` tools), input routing, `collectHandoff`, and packet wiring. Loaded and transpiled by the host `pi` (no local build).
+- `index.ts` — the only TypeScript file and the extension entry (root `index.ts` so pi's extension list shows the bare package name): extension factory (event handlers, `/consensflow:*` commands, the `cf_*` tools), input routing, `collectHandoff`, and packet wiring. Loaded and transpiled by the host `pi` (no local build).
 - `extensions/consensflow/lib/*.js` — plain JS, the unit-tested core:
   - `presets.js` — preset catalog + `participantFromPreset` (supports `--name`/`--id` rename).
   - `state.js` — single shared ConsensFlow home (`configHome()` / `configRoot()` = `~/.consensflow`) + `participants.json` + one-time migration from old per-tool rosters when the shared file is missing + `normalizeParticipant` (validates kind/policies) + workspace artifacts under `workspaces/`.

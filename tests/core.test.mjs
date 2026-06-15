@@ -618,6 +618,12 @@ test("the cf_run_participant consent gate and name-neutrality stay locked in the
   assert.doesNotMatch(src, /Gabriel/);
   // No hidden-workflow commands should be registered (match the command registration form only).
   assert.doesNotMatch(src, /registerCommand\("(grill|spec-review|council|handoff)"/);
+  // Pi intentionally matches Claude Code's slash surface: only /consensflow:* commands, no
+  // legacy /cf, /participants, or per-participant /<name> command registration.
+  assert.doesNotMatch(src, /name:\s*"cf"/);
+  assert.doesNotMatch(src, /name:\s*"participants"/);
+  assert.doesNotMatch(src, /registerParticipantCommands/);
+  assert.match(src, /name:\s*"consensflow:cf"/);
 });
 
 test("every lib symbol the extension imports is actually exported (boundary smoke)", async () => {

@@ -28,11 +28,8 @@ Participant config is global/user-level and shared across Pi and Claude Code. Th
 There are no per-tool config roots. Create entries from presets or custom definitions:
 
 ```text
-/cf participants presets
 /consensflow:presets
-/cf participants add <preset>|all [--name <name>]
 /consensflow:participants add <preset>|all [--name <name>]
-/cf participants add --name <name> --kind <kind> --model <model> [--tools <p>]
 /consensflow:participants add --name <name> --kind <kind> --model <model> [--tools <p>]
 ```
 
@@ -45,8 +42,8 @@ Run artifacts are workspace-keyed under the config home — never inside the pro
 ## Prompt flow
 
 ```text
-@zeus What do you think?   (or the dedicated /zeus command)
-  -> input handler recognizes exactly one configured participant
+@zeus What do you think?   (or /consensflow:cf @zeus What do you think?)
+  -> input handler or namespaced command recognizes exactly one configured participant
   -> packet is written: identity + mode + session handoff + prompt
   -> runner launches the configured backend with its tools policy
      (read-only unless the participant was configured write-capable)
