@@ -5,7 +5,15 @@ description: Use ConsensFlow inside Pi to consult one named participant (an exte
 
 # ConsensFlow
 
-ConsensFlow lets the lead (this Pi session) consult one named participant at a time. A participant is an external coding-agent CLI (claude / codex / opencode / pi) run as an isolated one-shot subprocess: it receives a handoff of the current session plus a prompt, answers once, and does not persist between calls. Talking to a participant is like phoning an advisor — the lead stays the decision-maker and ConsensFlow never implements anything on its own.
+ConsensFlow lets the lead (this Pi session) consult one named participant at a time. A participant is an external coding-agent CLI (claude / codex / opencode / pi) run as an isolated one-shot subprocess: it receives a handoff of the current session plus a prompt, answers once, and does not persist between calls. Talking to a participant is like phoning an advisor — or, when explicitly made write-capable, briefly handing a task to a helper. The lead stays the decision-maker and ConsensFlow never accepts or keeps participant work on its own.
+
+## What participants can do
+
+Use participants for all of these, one participant at a time:
+
+- **Review / second opinion / design critique.** This is the default use: ask a read-only participant to inspect context, critique a plan, review a pasted diff, identify risks, or suggest tests.
+- **Code-writing help.** A participant can also implement, refactor, or run commands when it is write-capable (stored `--tools workspace-write` / `full-auto`, or a per-call `toolsPolicy` override in `cf_run_participant`). Treat it like a temporary helper: after the run, inspect `git status` / `git diff` and relevant tests, then ask the user before keeping or building on the changes unless they pre-authorized it.
+- **Image generation.** `@pygmalion` (or any `kind=image` participant) uses **gpt-image-2** via Pi's `openai-codex` login. It receives the image prompt only — no session handoff — saves `image.png` in the ConsensFlow run dir under `~/.consensflow/workspaces/…`, and Pi shows the generated image inline.
 
 ## The two rules that matter most
 
