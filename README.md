@@ -154,6 +154,7 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@ares` | pi | `openrouter/x-ai/grok-4.3` | high |
 | `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — |
 | `@selene` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high |
+| `@kimi` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high |
 | `@luna` | opencode | `openrouter/moonshotai/kimi-k2.7-code` | — |
 | `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high |
 | `@vidar` | opencode | `openrouter/meta-llama/llama-4-maverick` | — |
@@ -175,6 +176,7 @@ Add one, all, or a renamed copy:
 
 ```text
 /consensflow:participants add zeus                    # add the zeus preset      → @zeus
+/consensflow:participants add kimi                    # Pi-backed Kimi K2.7 Code → @kimi
 /consensflow:participants add all                     # add every preset at once
 /consensflow:participants add zeus --name Deepreview  # same engine/model, your name → @deepreview
 ```
