@@ -86,10 +86,57 @@ A newly added participant's `/<name>` command becomes available after `/reload` 
 
 From the lead, **prefer the `cf_run_participant` tool.** Pass an optional `context` brief on top of the auto-included session handoff to focus the participant on exactly what you want reviewed.
 
+## Full command reference
+
+Pi-native commands:
+
+```text
+/cf status
+/cf doctor
+/cf participants list
+/cf participants presets
+/cf participants add <preset> [--name <name>] [--cwd <subdir>] [--timeoutMs <ms>]
+/cf participants add all
+/cf participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>|--thinking <t>] [--tools readonly|workspace-write|full-auto] [--cwd <subdir>]
+/cf participants show @name
+/cf participants remove @name
+/cf @name <prompt>
+/cf ask @name <prompt>
+@name <prompt>
+/name <prompt>                 # after /reload or a fresh session
+```
+
+Claude Code-style aliases also work in Pi:
+
+```text
+/consensflow:cf [status|doctor|participants <…>|run @name <prompt>|ask @name <prompt>|@name <prompt>]
+/consensflow:status
+/consensflow:doctor
+/consensflow:presets
+/consensflow:participants [list|presets|add|show|remove|add <…>]
+```
+
 ## Tools available to the lead
 
 - `cf_list_participants` — see who is configured.
-- `cf_run_participant` — send one prompt to one participant (optional `context` brief on top of the auto handoff). The preferred path when the lead consults on its own initiative.
+- `cf_run_participant` — send one prompt to one participant. This is the preferred path when the lead consults on its own initiative.
+
+`cf_run_participant` parameters the lead should know:
+
+- `participant` — `@name` or `name`.
+- `prompt` — the exact question/task for that participant.
+- `context` — optional focused brief added on top of the automatic session handoff.
+- `includeHandoff` — defaults to true; set false only when the participant should not see the current session snapshot.
+- `timeoutMs` — optional timeout override.
+- `toolsPolicy` — optional per-call override: `readonly`, `workspace-write`, or `full-auto`.
+
+## Read-only vs write-capable participants
+
+- **Default and presets:** read-only. Do not add `--tools`, or use `--tools readonly` explicitly.
+- **Stored write-capable participant:** create/update with `--tools workspace-write` (or `full-auto`) when the participant is meant to edit by default.
+- **Per-call write access from the lead:** pass `toolsPolicy: "workspace-write"` (or `"full-auto"`) to `cf_run_participant` for one run only. This keeps one roster entry and makes the escalation explicit.
+- **Force read-only for one call:** pass `toolsPolicy: "readonly"`, even if the stored participant is write-capable.
+- **After any write-capable run:** inspect what changed yourself (`git status`, `git diff`, relevant tests as needed), summarize what the participant changed, give your recommendation, and wait for user approval before keeping/building on/committing the changes unless the user pre-authorized that exact action.
 
 ## Invariants
 
