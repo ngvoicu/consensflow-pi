@@ -27,7 +27,7 @@ Preset map (each model+effort family on every engine that runs it):
 
 Run `/consensflow:presets` for the full list with exact model strings.
 
-Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--tools`, `--skills`, `--agent`, `--maxTurns`. Participants are read-only unless you pass `--tools workspace-write` or `full-auto` (then they can edit and run).
+Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--tools`, `--skills`, `--agent`, `--maxTurns`. Participants use default review mode unless you pass `--tools workspace-write` or `full-auto` (then they can edit and run).
 
 ## Ask directly
 

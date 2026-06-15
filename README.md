@@ -20,7 +20,7 @@ The whole idea in five bullets:
 
 - **Participant** = a named *(agent + model)* combo. Configure once, reuse from any project.
 - **One at a time.** `@zeus @athena …` is rejected — ask one, read, then ask the next.
-- **Read-only by default.** A participant can look at your files but not change them, unless you explicitly make it write-capable.
+- **Safe by default.** A participant starts in review mode; use `--rw` or `--tools workspace-write` only when you want that call to edit files or run commands.
 - **One-shot, but context-aware.** Each call is fresh (no memory of past calls), yet it always receives the current session handoff — *including earlier participants' answers* — so the 2nd agent you ask can build on the 1st.
 - **The lead can ask too — and asks before applying.** Pi will consult a participant on its own initiative when a second opinion would help, then report back and get your go-ahead before applying anything — unless you pre-authorized it (e.g. "get Zeus's take and apply what makes sense").
 
@@ -37,12 +37,12 @@ ConsensFlow sees exactly one @mention  →  intercepts the message
    ▼
 It builds a "packet" for @zeus:
    • who @zeus is        (claude-code · claude-opus-4-8 · max)
-   • mode line           (read-only — or read-write if you made it write-capable)
+   • mode line           (review mode — or write mode if you made it write-capable)
    • handoff             (a snapshot of THIS session + earlier @participant replies)
    • your question
    ▼
 Runs @zeus as an isolated, one-shot subprocess:
-   claude -p … --model claude-opus-4-8 --effort max   (read-only tools)
+   claude -p … --model claude-opus-4-8 --effort max   (default review mode)
    no memory of past calls, no live access to your session — just the packet
    ▼
 Saves everything as an artifact:
@@ -114,62 +114,62 @@ All presets in one view. The same model+effort family appears on **every tool th
 
 Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8, and GPT 5.5 lead; the rest are alphabetical.
 
-| Preset | Tool | Model | Effort | Mode |
-|---|---|---|---|---|
-| `@calliope` | claude-code | `claude-fable-5` | max | read-only |
-| `@clio` | claude-code | `claude-fable-5` | xhigh | read-only |
-| `@orpheus` | pi | `anthropic/claude-fable-5` | xhigh | read-only |
-| `@saga` | opencode | `openrouter/anthropic/claude-fable-5` | xhigh | read-only |
-| `@euterpe` | claude-code | `claude-fable-5` | high | read-only |
-| `@linus` | pi | `anthropic/claude-fable-5` | high | read-only |
-| `@gunnlod` | opencode | `openrouter/anthropic/claude-fable-5` | high | read-only |
-| `@thalia` | claude-code | `claude-fable-5` | medium | read-only |
-| `@erato` | pi | `anthropic/claude-fable-5` | medium | read-only |
-| `@kvasir` | opencode | `openrouter/anthropic/claude-fable-5` | medium | read-only |
-| `@zeus` | claude-code | `claude-opus-4-8` | max | read-only |
-| `@apollo` | claude-code | `claude-opus-4-8` | xhigh | read-only |
-| `@kronos` | pi | `anthropic/claude-opus-4-8` | xhigh | read-only |
-| `@baldr` | opencode | `openrouter/anthropic/claude-opus-4.8` | xhigh | read-only |
-| `@artemis` | claude-code | `claude-opus-4-8` | medium | read-only |
-| `@atlas` | pi | `anthropic/claude-opus-4-8` | medium | read-only |
-| `@vali` | opencode | `openrouter/anthropic/claude-opus-4.8` | medium | read-only |
-| `@athena` | codex | `gpt-5.5` | xhigh | read-only |
-| `@iris` | pi | `openai-codex/gpt-5.5` | xhigh | read-only |
-| `@forseti` | opencode | `openrouter/openai/gpt-5.5` | xhigh | read-only |
-| `@perseus` | codex | `gpt-5.5` | high | read-only |
-| `@hermes` | pi | `openai-codex/gpt-5.5` | high | read-only |
-| `@bragi` | opencode | `openrouter/openai/gpt-5.5` | high | read-only |
-| `@loki` | codex | `gpt-5.5` | medium | read-only |
-| `@eos` | pi | `openai-codex/gpt-5.5` | medium | read-only |
-| `@ullr` | opencode | `openrouter/openai/gpt-5.5` | medium | read-only |
-| `@hermod` | claude-code | `claude-haiku-4-5` | low | read-only |
-| `@zephyros` | pi | `openrouter/deepseek/deepseek-v4-flash` | low | read-only |
-| `@freya` | opencode | `openrouter/deepseek/deepseek-v4-flash` | — | read-only |
-| `@hades` | pi | `openrouter/deepseek/deepseek-v4-pro` | high | read-only |
-| `@odin` | opencode | `openrouter/deepseek/deepseek-v4-pro` | — | read-only |
-| `@helios` | pi | `openrouter/google/gemini-3.1-pro-preview` | high | read-only |
-| `@heimdall` | opencode | `openrouter/google/gemini-3.1-pro-preview` | high | read-only |
-| `@nike` | pi | `openrouter/google/gemini-3.5-flash` | low | read-only |
-| `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | low | read-only |
-| `@ares` | pi | `openrouter/x-ai/grok-4.3` | high | read-only |
-| `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — | read-only |
-| `@selene` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high | read-only |
-| `@luna` | opencode | `openrouter/moonshotai/kimi-k2.7-code` | — | read-only |
-| `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high | read-only |
-| `@vidar` | opencode | `openrouter/meta-llama/llama-4-maverick` | — | read-only |
-| `@metis` | pi | `openrouter/minimax/minimax-m3` | high | read-only |
-| `@mimir` | opencode | `openrouter/minimax/minimax-m3` | — | read-only |
-| `@aeolus` | pi | `openrouter/mistralai/mistral-large-2512` | high | read-only |
-| `@njord` | opencode | `openrouter/mistralai/mistral-large-2512` | — | read-only |
-| `@hephaestus` | pi | `openrouter/qwen/qwen3.7-max` | high | read-only |
-| `@tyr` | opencode | `openrouter/qwen/qwen3.7-max` | — | read-only |
-| `@pygmalion` | image (Codex backend) | `gpt-image-2` | — | — |
+| Preset | Tool | Model | Effort |
+|---|---|---|---|
+| `@calliope` | claude-code | `claude-fable-5` | max |
+| `@clio` | claude-code | `claude-fable-5` | xhigh |
+| `@orpheus` | pi | `anthropic/claude-fable-5` | xhigh |
+| `@saga` | opencode | `openrouter/anthropic/claude-fable-5` | xhigh |
+| `@euterpe` | claude-code | `claude-fable-5` | high |
+| `@linus` | pi | `anthropic/claude-fable-5` | high |
+| `@gunnlod` | opencode | `openrouter/anthropic/claude-fable-5` | high |
+| `@thalia` | claude-code | `claude-fable-5` | medium |
+| `@erato` | pi | `anthropic/claude-fable-5` | medium |
+| `@kvasir` | opencode | `openrouter/anthropic/claude-fable-5` | medium |
+| `@zeus` | claude-code | `claude-opus-4-8` | max |
+| `@apollo` | claude-code | `claude-opus-4-8` | xhigh |
+| `@kronos` | pi | `anthropic/claude-opus-4-8` | xhigh |
+| `@baldr` | opencode | `openrouter/anthropic/claude-opus-4.8` | xhigh |
+| `@artemis` | claude-code | `claude-opus-4-8` | medium |
+| `@atlas` | pi | `anthropic/claude-opus-4-8` | medium |
+| `@vali` | opencode | `openrouter/anthropic/claude-opus-4.8` | medium |
+| `@athena` | codex | `gpt-5.5` | xhigh |
+| `@iris` | pi | `openai-codex/gpt-5.5` | xhigh |
+| `@forseti` | opencode | `openrouter/openai/gpt-5.5` | xhigh |
+| `@perseus` | codex | `gpt-5.5` | high |
+| `@hermes` | pi | `openai-codex/gpt-5.5` | high |
+| `@bragi` | opencode | `openrouter/openai/gpt-5.5` | high |
+| `@loki` | codex | `gpt-5.5` | medium |
+| `@eos` | pi | `openai-codex/gpt-5.5` | medium |
+| `@ullr` | opencode | `openrouter/openai/gpt-5.5` | medium |
+| `@hermod` | claude-code | `claude-haiku-4-5` | low |
+| `@zephyros` | pi | `openrouter/deepseek/deepseek-v4-flash` | low |
+| `@freya` | opencode | `openrouter/deepseek/deepseek-v4-flash` | — |
+| `@hades` | pi | `openrouter/deepseek/deepseek-v4-pro` | high |
+| `@odin` | opencode | `openrouter/deepseek/deepseek-v4-pro` | — |
+| `@helios` | pi | `openrouter/google/gemini-3.1-pro-preview` | high |
+| `@heimdall` | opencode | `openrouter/google/gemini-3.1-pro-preview` | high |
+| `@nike` | pi | `openrouter/google/gemini-3.5-flash` | low |
+| `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | low |
+| `@ares` | pi | `openrouter/x-ai/grok-4.3` | high |
+| `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — |
+| `@selene` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high |
+| `@luna` | opencode | `openrouter/moonshotai/kimi-k2.7-code` | — |
+| `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high |
+| `@vidar` | opencode | `openrouter/meta-llama/llama-4-maverick` | — |
+| `@metis` | pi | `openrouter/minimax/minimax-m3` | high |
+| `@mimir` | opencode | `openrouter/minimax/minimax-m3` | — |
+| `@aeolus` | pi | `openrouter/mistralai/mistral-large-2512` | high |
+| `@njord` | opencode | `openrouter/mistralai/mistral-large-2512` | — |
+| `@hephaestus` | pi | `openrouter/qwen/qwen3.7-max` | high |
+| `@tyr` | opencode | `openrouter/qwen/qwen3.7-max` | — |
+| `@pygmalion` | image (Codex backend) | `gpt-image-2` | — |
 
 Why some cells differ: `max` exists only on claude-code — pi's thinking scale and OpenRouter's effort scale both top out at `xhigh`, so that is the ceiling tier everywhere else. A `—` effort means the engine's catalog defines no effort variants for that model (it runs at the model's default reasoning).
 
 Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
-Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. All presets are read-only — for a write-capable participant, create a custom one (Step 2).
+Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets use the default review mode; add `--rw` for one write-capable run, or create/update a participant with `--tools workspace-write` if it should write by default.
 
 Add one, all, or a renamed copy:
 
@@ -195,7 +195,7 @@ The popular models already ship as presets (the tables above), so usually you ju
     --effort max --tools workspace-write
 ```
 
-> **Read-only vs write.** By default a participant can only read. To let one actually edit files and run commands, pass `--tools workspace-write` (or `full-auto`) — write access is never implicit.
+> **Default vs write.** By default a participant is a reviewer. To let one edit files and run commands, pass `--tools workspace-write` (or `full-auto`) when creating it, or use `--rw` on a single run — write access is never implicit.
 
 ### Step 3 — Ask a participant
 
@@ -233,7 +233,7 @@ The reply appears inline in Pi. Every run is also saved under the ConsensFlow ho
 
 **Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive (via `cf_run_participant`'s `onUpdate`) — foreground-incremental. Every text-CLI run also writes `transcript.md` into the run dir so a killed or backgrounded run isn't lost; on a timeout you get the partial trail under a clear header, never a raw event dump.
 
-After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it. **Per-call write:** a participant is read-only by default; pass `cf_run_participant` a `toolsPolicy` of `workspace-write`/`full-auto`, or add `--rw` / `--tools workspace-write` to `/consensflow:cf`, to make it write-capable for one run — no second roster entry needed.
+After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it. **Per-call write:** add `--rw` / `--tools workspace-write` to `/consensflow:cf`, or pass `cf_run_participant` a `toolsPolicy` of `workspace-write`/`full-auto`, to make only that run write-capable — no second roster entry needed.
 
 Then you, the lead, decide: implement all of it, some of it, or none.
 
@@ -294,7 +294,7 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 
 @name <prompt>                   # ask — mention anywhere in the line
 /consensflow:cf @name <prompt> [--rw | --tools workspace-write]  # explicit router, optional per-call write
-/consensflow:cf ask @name <prompt> [--tools readonly|workspace-write|full-auto]
+/consensflow:cf ask @name <prompt> [--rw | --tools workspace-write|full-auto]
 ```
 
 Preset add flags: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`.
@@ -305,7 +305,7 @@ Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thin
 ## Good to know
 
 - **One-shot:** participants don't remember previous calls. Continuity comes from the handoff (re-sent each time), which now includes earlier `@participant` answers — so a later participant sees an earlier one's reply. Great for debate; if you want a genuinely *independent* opinion, ask that participant **first**, before others have replied.
-- **Isolated & safe:** each participant runs in its own one-shot subprocess, started in your workspace; a `--cwd` that escapes it is rejected before launch (realpath-checked). Isolation comes from each engine's tool policy — a true OS sandbox only for Codex — so treat read-only as policy enforcement, not a hard sandbox. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself. Read-only is enforced with each engine's own mechanism: an OS sandbox for Codex, allow+deny tool lists for Claude Code, a read-only tool allowlist for Pi, and a deny-edit/bash permission override (`OPENCODE_PERMISSION`) for OpenCode.
+- **Isolated & safe:** each participant runs in its own one-shot subprocess, started in your workspace; a `--cwd` that escapes it is rejected before launch (realpath-checked). Isolation comes from each engine's tool policy — a true OS sandbox only for Codex — so treat the default review mode as policy enforcement, not a hard sandbox. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself. Default mode is enforced with each engine's own mechanism: an OS no-write sandbox for Codex, allow+deny tool lists for Claude Code, a limited tool allowlist for Pi, and a deny-edit/bash permission override (`OPENCODE_PERMISSION`) for OpenCode.
 - **You're always the lead.** ConsensFlow routes your question and shows you the answer — it never implements or keeps anything on its own. The lead consults freely, but summarizes a participant's response (or a write-capable participant's file edits) and asks before applying it, unless you've already told it to proceed.
 
 ---

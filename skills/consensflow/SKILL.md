@@ -11,7 +11,7 @@ ConsensFlow lets the lead (this Pi session) consult one named participant at a t
 
 Use participants for all of these, one participant at a time:
 
-- **Review / second opinion / design critique.** This is the default use: ask a read-only participant to inspect context, critique a plan, review a pasted diff, identify risks, or suggest tests.
+- **Review / second opinion / design critique.** This is the default use: ask a participant to inspect context, critique a plan, review a pasted diff, identify risks, or suggest tests.
 - **Code-writing help.** A participant can also implement, refactor, or run commands when it is write-capable (stored `--tools workspace-write` / `full-auto`, or a per-call `toolsPolicy` override in `cf_run_participant`). Treat it like a temporary helper: after the run, inspect `git status` / `git diff` and relevant tests, then ask the user before keeping or building on the changes unless they pre-authorized it.
 - **Image generation.** `@pygmalion` (or any `kind=image` participant) uses **gpt-image-2** via Pi's `openai-codex` login. It receives the image prompt only — no session handoff — saves `image.png` in the ConsensFlow run dir under `~/.consensflow/workspaces/…`, and Pi shows the generated image inline.
 
@@ -67,7 +67,7 @@ Participants are configured in the shared roster `~/.consensflow/participants.js
     --tools workspace-write                     # fully custom, write-capable
 ```
 
-Presets (all read-only; the same model+effort family exists on every engine that runs it):
+Presets use default review mode; the same model+effort family exists on every engine that runs it:
 
 - **Fable 5** (Anthropic's top model — use for the questions that really matter): `@calliope`/`@clio`/`@euterpe`/`@thalia` (Claude Code max/xhigh/high/medium), `@orpheus`/`@linus`/`@erato` (Pi xhigh/high/medium, Anthropic auth), `@saga`/`@gunnlod`/`@kvasir` (OpenCode xhigh/high/medium via OpenRouter).
 - **Opus 4.8**: `@zeus`/`@apollo`/`@artemis` (Claude Code max/xhigh/medium), `@kronos`/`@atlas` (Pi xhigh/medium, Anthropic auth), `@baldr`/`@vali` (OpenCode xhigh/medium via OpenRouter; xhigh is the ceiling outside claude-code).
@@ -104,7 +104,7 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 /consensflow:participants [list|presets|add|show|remove|add <…>]
 
 @name <prompt>                                            # ask — mention anywhere in the line
-/consensflow:cf @name <prompt> [--rw|--tools <policy>]     # explicit router, optional per-call tools override
+/consensflow:cf @name <prompt> [--rw|--tools workspace-write|full-auto]  # explicit router, optional per-call write
 ```
 
 ## Tools available to the lead
@@ -119,20 +119,19 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 - `context` — optional focused brief added on top of the automatic session handoff.
 - `includeHandoff` — defaults to true; set false only when the participant should not see the current session snapshot.
 - `timeoutMs` — optional timeout override.
-- `toolsPolicy` — optional per-call override: `readonly`, `workspace-write`, or `full-auto`.
+- `toolsPolicy` — optional per-call write override: `workspace-write` or `full-auto`. Omit it for default review mode.
 
-## Read-only vs write-capable participants
+## Default vs write-capable participants
 
-- **Default and presets:** read-only. Do not add `--tools`, or use `--tools readonly` explicitly.
+- **Default and presets:** review mode. Do not add `--tools` unless you want persistent write access.
 - **Stored write-capable participant:** create/update with `--tools workspace-write` (or `full-auto`) when the participant is meant to edit by default.
 - **Per-call write access from the lead:** pass `toolsPolicy: "workspace-write"` (or `"full-auto"`) to `cf_run_participant`, or use `/consensflow:cf @name <prompt> --rw` / `--tools workspace-write`, for one run only. This keeps one roster entry and makes the escalation explicit.
-- **Force read-only for one call:** pass `toolsPolicy: "readonly"`, or use `/consensflow:cf @name <prompt> --tools readonly`, even if the stored participant is write-capable.
 - **After any write-capable run:** inspect what changed yourself (`git status`, `git diff`, relevant tests as needed), summarize what the participant changed, give your recommendation, and wait for user approval before keeping/building on/committing the changes unless the user pre-authorized that exact action.
 
 ## Invariants
 
 - **One at a time.** Send to exactly one participant per call. Multiple leading `@mentions` are rejected; never fan out to several participants automatically. If the user names several, ask which one first, or ask one and wait for its answer before asking the next.
-- **Read-only by default.** A participant reads but does not write unless it was explicitly configured with `--tools workspace-write` or `full-auto`; a missing tools policy is treated as read-only.
+- **Safe by default.** A participant runs in review mode unless it was explicitly configured with `--tools workspace-write` or `full-auto`, or that call passes `--rw` / `toolsPolicy: "workspace-write"`.
 - **One-shot, no memory.** Each call is fresh. Continuity comes only from the handoff (re-sent each time), which already includes earlier `@participant` replies — so a later participant can build on an earlier one (cross-pollination). For a genuinely *independent* opinion, ask that participant **first**, before others have replied — otherwise its handoff carries the prior answers and colors it.
 - **No live/shared transcript.** Participants get a one-shot serialized handoff, not a streamed or shared session. There is no shared room and no ACP architecture.
 - **The lead is always the decision-maker.** ConsensFlow routes a prompt and returns an answer; it never implements anything on its own. Acting on any answer goes through the gate above.

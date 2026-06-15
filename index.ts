@@ -68,7 +68,7 @@ export default async function consensflow(pi: ExtensionAPI) {
       context: Type.Optional(Type.String({ description: "Optional focused note/brief added on top of the auto-included session handoff." })),
       includeHandoff: Type.Optional(Type.Boolean({ description: "Attach the current session transcript as context. Defaults to true." })),
       timeoutMs: Type.Optional(Type.Number({ description: "Optional timeout override" })),
-      toolsPolicy: Type.Optional(Type.String({ description: "Per-call tools override: 'workspace-write' or 'full-auto' to make this read-only participant write-capable for this run, or 'readonly' to force read-only. Defaults to the participant's stored policy. Write stays gated by the consent rule above." })),
+      toolsPolicy: Type.Optional(Type.String({ description: "Per-call write override: 'workspace-write' or 'full-auto'. Omit for the default review mode. Defaults to the participant's stored policy. Write stays gated by the consent rule above." })),
     }),
     async execute(_toolCallId, params, signal, onUpdate, ctx) {
       const participant = await getParticipant(ctx.cwd, params.participant);
@@ -312,7 +312,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
     }
 
     if (presetRef) {
-      throw new Error(`Unknown preset: ${presetRef}\n\nPresets: ${listPresetIds().join(", ")} (rename any with --name).\n\nOr create a custom participant:\n  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--tools <readonly|workspace-write|full-auto>]`);
+      throw new Error(`Unknown preset: ${presetRef}\n\nPresets: ${listPresetIds().join(", ")} (rename any with --name).\n\nOr create a custom participant:\n  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--tools <workspace-write|full-auto>]`);
     }
     throw new Error(addUsage());
   }
@@ -558,7 +558,7 @@ function addUsage() {
     "Usage:",
     "  /consensflow:participants add <preset> [--name <name>]        # from a preset, optionally renamed",
     "  /consensflow:participants add all                              # every preset",
-    "  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--thinking <t>] [--tools <readonly|workspace-write|full-auto>] [--cwd <subdir>]",
+    "  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--thinking <t>] [--tools <workspace-write|full-auto>] [--cwd <subdir>]",
     "",
     `Presets: ${listPresetIds().join(", ")}`,
   ].join("\n");
@@ -612,7 +612,7 @@ function summarizeHandoff(handoff: string, included: boolean) {
   return `attached (${Math.max(1, Math.round(Buffer.byteLength(handoff, "utf8") / 1024))} KB)`;
 }
 
-// Just the answer on a clean read-only run. Diagnostics appear only when they matter: the run
+// Just the answer on a clean default-mode run. Diagnostics appear only when they matter: the run
 // failed, the handoff was unexpectedly empty, or the participant could have written to the
 // workspace. Full metadata stays in result.json and the message details.
 function renderRunResult(result: any) {
@@ -680,7 +680,7 @@ Admin commands:
 Rules:
 
 - Send to one participant at a time.
-- Participants default to read-only. Use \`--rw\` / \`--tools workspace-write\` on one run,
+- Participants use default review mode. Use \`--rw\` / \`--tools workspace-write\` on one run,
   or configure \`--tools workspace-write\` / \`full-auto\`, when a participant should edit files or run commands.
 - One-shot: participants do not remember previous calls; each call re-sends the current session handoff.
 - New participants are addressed with \`@name\` or \`/consensflow:cf @name …\`; no per-participant slash commands are registered.
