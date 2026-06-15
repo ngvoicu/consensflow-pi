@@ -167,8 +167,11 @@ async function handleCf(args: string, ctx: any, pi: ExtensionAPI) {
     if (tokens.length === 0) return await handleStatus(ctx, pi);
 
     const known = await knownParticipantKeys(ctx.cwd);
-    const directPrompt = parseParticipantPrompt(tokens, known);
-    if (directPrompt) return await handleParticipantPrompt(directPrompt, ctx, pi, ctx.signal);
+    const commandName = tokens[0]?.toLowerCase();
+    if (!CF_SUBCOMMANDS.has(commandName)) {
+      const directPrompt = parseRunPrompt(tokens, known);
+      if (directPrompt) return await handleParticipantPrompt(directPrompt, ctx, pi, ctx.signal);
+    }
 
     const command = tokens.shift() ?? "status";
     switch (command) {
@@ -183,7 +186,7 @@ async function handleCf(args: string, ctx: any, pi: ExtensionAPI) {
       case "run":
       case "ask":
       case "to": {
-        const parsed = parseParticipantPrompt(tokens, known);
+        const parsed = parseRunPrompt(tokens, known);
         if (!parsed) throw new Error("Usage: /consensflow:cf @name <prompt> or /consensflow:cf ask @name <prompt>");
         return await handleParticipantPrompt(parsed, ctx, pi, ctx.signal);
       }
@@ -322,16 +325,20 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
   if (!participant) throw new Error(`Unknown participant: @${parsed.participant}`);
   if (participant.kind === "image") return await runImageParticipant(participant, parsed.prompt, ctx, pi, signal);
   ctx.ui.notify(`Asking @${participant.id}...`, "info");
-  const handoff = collectHandoff(ctx);
+  const includeHandoff = parsed.includeHandoff ?? true;
+  const handoff = includeHandoff ? collectHandoff(ctx) : "";
   const result = await runNamedParticipant({
     cwd: ctx.cwd,
     participantRef: participant,
     kind: "ask",
     task: parsed.prompt,
+    extraContext: parsed.context,
     handoff,
     signal,
+    timeoutMs: parsed.timeoutMs,
+    toolsPolicy: parsed.toolsPolicy,
   });
-  result.handoffSummary = summarizeHandoff(handoff, true);
+  result.handoffSummary = summarizeHandoff(handoff, includeHandoff);
   // Record the prompt in details so later participants' handoffs can reconstruct this exchange
   // (the @mention input was "handled" and is never stored as a normal session message).
   sendCfMessage(pi, renderRunResult(result), { ...result, prompt: parsed.prompt });
@@ -405,7 +412,9 @@ function collectHandoff(ctx: any): string {
   }
 }
 
-type ParticipantPrompt = { participant: string; prompt: string; error?: undefined } | { participant?: undefined; prompt?: undefined; error: string };
+type ParticipantPrompt =
+  | { participant: string; prompt: string; error?: undefined; context?: string; includeHandoff?: boolean; timeoutMs?: number; toolsPolicy?: string }
+  | { participant?: undefined; prompt?: undefined; error: string };
 
 // Tokenize a typed line and decide whether it addresses one participant. When the line contains
 // any `@token`, load the configured participants so a single non-leading mention (`hi @zeus`)
@@ -415,7 +424,74 @@ async function parseTypedPrompt(text: string, ctx: any): Promise<ParticipantProm
   if (!trimmed || trimmed.startsWith("/")) return null;
   const tokens = tokenize(trimmed);
   if (!tokens.some((token) => token.startsWith("@"))) return null;
-  return parseParticipantPrompt(tokens, await knownParticipantKeys(ctx.cwd));
+  return parseRunPrompt(tokens, await knownParticipantKeys(ctx.cwd));
+}
+
+const CF_SUBCOMMANDS = new Set(["status", "state", "doctor", "participants", "participant", "run", "ask", "to", "help"]);
+
+function parseRunPrompt(tokens: string[], known: Set<string>): ParticipantPrompt | null {
+  const parsed = parseRunOptions(tokens);
+  const prompt = parseParticipantPrompt(parsed.positional, known) as ParticipantPrompt | null;
+  if (!prompt || prompt.error) return prompt;
+  const toolsPolicy = parsed.flags.rw === true ? "workspace-write" : stringFlag(parsed.flags.tools ?? parsed.flags.toolsPolicy);
+  const timeoutMs = numberFlag(parsed.flags["timeout-ms"] ?? parsed.flags.timeoutMs);
+  return {
+    ...prompt,
+    context: stringFlag(parsed.flags.context),
+    includeHandoff: flagBool(parsed.flags, "handoff") ?? true,
+    timeoutMs,
+    toolsPolicy,
+  };
+}
+
+function parseRunOptions(tokens: string[]) {
+  const positional: string[] = [];
+  const flags: Record<string, unknown> = {};
+  const valueFlags = new Set(["tools", "toolsPolicy", "context", "timeout-ms", "timeoutMs"]);
+  const booleanFlags = new Set(["rw", "handoff", "no-handoff"]);
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (!token.startsWith("--") || token === "--") {
+      positional.push(token);
+      continue;
+    }
+    const raw = token.slice(2);
+    const eq = raw.indexOf("=");
+    const name = eq >= 0 ? raw.slice(0, eq) : raw;
+    if (eq >= 0) {
+      if (valueFlags.has(name)) flags[name] = raw.slice(eq + 1);
+      else if (booleanFlags.has(name)) flags[name] = raw.slice(eq + 1) !== "false";
+      else positional.push(token);
+      continue;
+    }
+    if (booleanFlags.has(name)) {
+      flags[name] = true;
+      continue;
+    }
+    if (valueFlags.has(name)) {
+      const next = tokens[i + 1];
+      if (next === undefined || next.startsWith("--")) throw new Error(`--${name} requires a value`);
+      flags[name] = next;
+      i += 1;
+      continue;
+    }
+    positional.push(token);
+  }
+  return { positional, flags };
+}
+
+function flagBool(flags: Record<string, unknown>, name: string) {
+  if (flags[`no-${name}`] === true) return false;
+  if (flags[name] === true) return true;
+  return undefined;
+}
+
+function numberFlag(value: unknown) {
+  const text = stringFlag(value);
+  if (text === undefined) return undefined;
+  const n = Number(text);
+  if (!Number.isFinite(n) || n <= 0) throw new Error(`timeout must be a positive number of milliseconds, got: ${text}`);
+  return n;
 }
 
 // Slugified ids + names of every configured participant, matching getParticipant's resolution.
@@ -574,8 +650,10 @@ session as a handoff plus your prompt, and answers conversationally.
 Ask a participant:
 
 \`\`\`text
-@zeus What do you think about this approach?                  # bare mention
-/consensflow:cf @zeus What do you think about this approach?  # explicit router
+@zeus What do you think about this approach?                          # bare mention
+/consensflow:cf @zeus What do you think about this approach?          # explicit router
+/consensflow:cf @builder Make the minimal fix --rw                    # per-call write
+/consensflow:cf @builder Make the minimal fix --tools workspace-write  # per-call write
 \`\`\`
 
 Add participants (shared across Pi and Claude Code, ${participantsPath(process.cwd())}):
@@ -599,8 +677,8 @@ Admin commands:
 Rules:
 
 - Send to one participant at a time.
-- Participants are read-only unless you explicitly configure \`--tools workspace-write\` or
-  \`full-auto\` (a write-capable participant can edit files and run commands).
+- Participants default to read-only. Use \`--rw\` / \`--tools workspace-write\` on one run,
+  or configure \`--tools workspace-write\` / \`full-auto\`, when a participant should edit files or run commands.
 - One-shot: participants do not remember previous calls; each call re-sends the current session handoff.
 - New participants are addressed with \`@name\` or \`/consensflow:cf @name …\`; no per-participant slash commands are registered.
 - The current Pi session remains the lead and decides what to implement.

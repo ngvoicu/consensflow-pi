@@ -36,6 +36,8 @@ Use a bare mention or the Claude Code-style `/consensflow:cf` router. Pi intenti
 ```text
 @zeus What do you think about this approach?
 /consensflow:cf @athena Review the auth flow in src/login.ts and tell me only blockers.
+/consensflow:cf @builder Make the minimal fix --rw
+/consensflow:cf @builder Make the minimal fix --tools workspace-write
 ```
 
 ## Ask for questions

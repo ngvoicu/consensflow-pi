@@ -233,7 +233,7 @@ The reply appears inline in Pi. Every run is also saved under the ConsensFlow ho
 
 **Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive (via `cf_run_participant`'s `onUpdate`) — foreground-incremental. Every text-CLI run also writes `transcript.md` into the run dir so a killed or backgrounded run isn't lost; on a timeout you get the partial trail under a clear header, never a raw event dump.
 
-After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it. **Per-call write:** a participant is read-only by default; pass `cf_run_participant` a `toolsPolicy` of `workspace-write`/`full-auto` to make it write-capable for one run — no second roster entry needed.
+After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it. **Per-call write:** a participant is read-only by default; pass `cf_run_participant` a `toolsPolicy` of `workspace-write`/`full-auto`, or add `--rw` / `--tools workspace-write` to `/consensflow:cf`, to make it write-capable for one run — no second roster entry needed.
 
 Then you, the lead, decide: implement all of it, some of it, or none.
 
@@ -293,8 +293,8 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 /consensflow:participants [list|presets|add|show|remove|add <…>]
 
 @name <prompt>                   # ask — mention anywhere in the line
-/consensflow:cf @name <prompt>   # explicit router
-/consensflow:cf ask @name <prompt>
+/consensflow:cf @name <prompt> [--rw | --tools workspace-write]  # explicit router, optional per-call write
+/consensflow:cf ask @name <prompt> [--tools readonly|workspace-write|full-auto]
 ```
 
 Preset add flags: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`.

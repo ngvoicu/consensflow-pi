@@ -103,8 +103,8 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 /consensflow:presets
 /consensflow:participants [list|presets|add|show|remove|add <…>]
 
-@name <prompt>                 # ask — mention anywhere in the line
-/consensflow:cf @name <prompt> # explicit router
+@name <prompt>                                            # ask — mention anywhere in the line
+/consensflow:cf @name <prompt> [--rw|--tools <policy>]     # explicit router, optional per-call tools override
 ```
 
 ## Tools available to the lead
@@ -125,8 +125,8 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 
 - **Default and presets:** read-only. Do not add `--tools`, or use `--tools readonly` explicitly.
 - **Stored write-capable participant:** create/update with `--tools workspace-write` (or `full-auto`) when the participant is meant to edit by default.
-- **Per-call write access from the lead:** pass `toolsPolicy: "workspace-write"` (or `"full-auto"`) to `cf_run_participant` for one run only. This keeps one roster entry and makes the escalation explicit.
-- **Force read-only for one call:** pass `toolsPolicy: "readonly"`, even if the stored participant is write-capable.
+- **Per-call write access from the lead:** pass `toolsPolicy: "workspace-write"` (or `"full-auto"`) to `cf_run_participant`, or use `/consensflow:cf @name <prompt> --rw` / `--tools workspace-write`, for one run only. This keeps one roster entry and makes the escalation explicit.
+- **Force read-only for one call:** pass `toolsPolicy: "readonly"`, or use `/consensflow:cf @name <prompt> --tools readonly`, even if the stored participant is write-capable.
 - **After any write-capable run:** inspect what changed yourself (`git status`, `git diff`, relevant tests as needed), summarize what the participant changed, give your recommendation, and wait for user approval before keeping/building on/committing the changes unless the user pre-authorized that exact action.
 
 ## Invariants
