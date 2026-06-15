@@ -9,7 +9,7 @@ Participants are stored in the shared roster `~/.consensflow/participants.json`,
 ```text
 /consensflow:presets
 /consensflow:participants add zeus                     # from a preset
-/consensflow:participants add kimi                     # Pi-backed Kimi K2.7 Code (-> @kimi)
+/consensflow:participants add daedalus                 # Pi-backed Kimi K2.7 Code (-> @daedalus)
 /consensflow:participants add zeus --name Deepreview   # preset backend, custom name (-> @deepreview)
 /consensflow:participants add all                      # every preset
 /consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high \
@@ -21,7 +21,7 @@ Preset map (each model+effort family on every engine that runs it):
 - **Fable 5**: `calliope`/`clio`/`euterpe`/`thalia` (claude-code max/xhigh/high/medium), `orpheus`/`linus`/`erato` (pi xhigh/high/medium), `saga`/`gunnlod`/`kvasir` (opencode xhigh/high/medium).
 - **Opus 4.8**: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium), `baldr`/`vali` (opencode xhigh/medium).
 - **GPT 5.5**: `athena`/`perseus`/`loki` (codex xhigh/high/medium), `iris`/`hermes`/`eos` (pi xhigh/high/medium), `forseti`/`bragi`/`ullr` (opencode xhigh/high/medium).
-- **Deep open-weights**: Kimi K2.7 Code — `luna` (opencode), `kimi` (pi direct name), `selene` (pi mythic alias; both Pi presets use high thinking).
+- **Deep open-weights**: Kimi K2.7 Code — `luna` (opencode), `daedalus` (pi craftsman preset), `selene` (pi moon-goddess alias; both Pi presets use high thinking).
 - **Fast tier**: `hermod` (Claude Haiku), `nike`/`sif` (Gemini Flash on pi/opencode), `zephyros`/`freya` (DeepSeek Flash on pi/opencode).
 - **Model zoo** (same OpenRouter models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`.
 - **Image**: `pygmalion` (kind=image) — generates a picture with gpt-image-2 via your openai-codex login.

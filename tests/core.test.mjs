@@ -115,7 +115,7 @@ test("participant presets expose the allowed creation list", () => {
     "orpheus", "linus", "erato", "saga", "gunnlod", "kvasir",
     "kronos", "atlas", "baldr", "vali", "forseti", "bragi", "ullr",
     "hermod", "loki", "nike", "freya", "zephyros", "sif",
-    "hades", "helios", "ares", "hephaestus", "pan", "aeolus", "metis", "selene", "kimi",
+    "hades", "helios", "ares", "hephaestus", "pan", "aeolus", "metis", "selene", "daedalus",
     "odin", "heimdall", "thor", "tyr", "vidar", "njord", "mimir",
     "pygmalion",
   ]);
@@ -133,11 +133,11 @@ test("participant presets expose the allowed creation list", () => {
   // at xhigh, and models without catalog variants (e.g. Kimi K2.7 Code) carry no effort at all.
   assert.equal(getPreset("baldr").effort, "xhigh");
   assert.equal(getPreset("luna").effort, undefined);
-  // Kimi K2.7 Code runs on both engines: luna (opencode) and kimi/selene (pi, high thinking).
+  // Kimi K2.7 Code runs on both engines: luna (opencode) and daedalus/selene (pi, high thinking).
   assert.equal(getPreset("luna").model, "openrouter/moonshotai/kimi-k2.7-code");
-  assert.equal(getPreset("kimi").kind, "pi");
-  assert.equal(getPreset("kimi").model, "openrouter/moonshotai/kimi-k2.7-code");
-  assert.equal(getPreset("kimi").thinking, "high");
+  assert.equal(getPreset("daedalus").kind, "pi");
+  assert.equal(getPreset("daedalus").model, "openrouter/moonshotai/kimi-k2.7-code");
+  assert.equal(getPreset("daedalus").thinking, "high");
   assert.equal(getPreset("selene").model, "openrouter/moonshotai/kimi-k2.7-code");
   assert.equal(getPreset("selene").thinking, "high");
   assert.equal(getPreset("heimdall").effort, "high");

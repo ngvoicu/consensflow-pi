@@ -83,7 +83,7 @@ Current preset roster (default review mode; each model+effort family on every en
 - Fable 5: `calliope`/`clio`/`euterpe`/`thalia` (claude-code max/xhigh/high/medium), `orpheus`/`linus`/`erato` (pi xhigh/high/medium, Anthropic provider), `saga`/`gunnlod`/`kvasir` (opencode xhigh/high/medium via OpenRouter)
 - Opus 4.8: `zeus`/`apollo`/`artemis` (claude-code max/xhigh/medium), `kronos`/`atlas` (pi xhigh/medium, Anthropic provider), `baldr`/`vali` (opencode xhigh/medium via OpenRouter — xhigh is the effort ceiling everywhere outside claude-code)
 - GPT 5.5: `athena`/`perseus`/`loki` (codex xhigh/high/medium), `iris`/`hermes`/`eos` (pi xhigh/high/medium), `forseti`/`bragi`/`ullr` (opencode xhigh/high/medium via OpenRouter)
-- Deep open-weights: Kimi K2.7 Code — `luna` (opencode), `kimi` (pi direct name), `selene` (pi mythic alias; both Pi presets use high thinking)
+- Deep open-weights: Kimi K2.7 Code — `luna` (opencode), `daedalus` (pi craftsman preset), `selene` (pi moon-goddess alias; both Pi presets use high thinking)
 - Fast tier: `hermod` (Claude Haiku), `nike`/`sif` (Gemini Flash on pi/opencode), `zephyros`/`freya` (DeepSeek Flash on pi/opencode)
 - Model zoo (same models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`
 - Image: `pygmalion` (kind=image) — gpt-image-2 via the Codex Responses backend, not a CLI
