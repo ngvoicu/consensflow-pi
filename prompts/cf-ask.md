@@ -2,10 +2,11 @@
 description: Ask one ConsensFlow participant with a natural-language prompt
 argument-hint: "@participant <prompt>"
 ---
-Send one natural-language prompt to one ConsensFlow participant:
+Send one natural-language prompt to one ConsensFlow participant (the namespaced form mirrors Claude Code):
 
 ```text
 /cf $@
+/consensflow:cf $@
 ```
 
 Rules:

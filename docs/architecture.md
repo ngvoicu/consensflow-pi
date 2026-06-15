@@ -19,19 +19,27 @@ extensions/consensflow/lib/
 
 ## State
 
-Participant config is global/user-level, created from presets or custom definitions:
+Participant config is global/user-level and shared across Pi and Claude Code. The canonical roster is:
 
 ```text
-~/.consensflow/consensflow-pi/participants.json
+~/.consensflow/participants.json
+```
+
+There are no per-tool config roots. Create entries from presets or custom definitions:
+
+```text
 /cf participants presets
+/consensflow:presets
 /cf participants add <preset>|all [--name <name>]
+/consensflow:participants add <preset>|all [--name <name>]
 /cf participants add --name <name> --kind <kind> --model <model> [--tools <p>]
+/consensflow:participants add --name <name> --kind <kind> --model <model> [--tools <p>]
 ```
 
 Run artifacts are workspace-keyed under the config home — never inside the project:
 
 ```text
-~/.consensflow/consensflow-pi/workspaces/<workspace>-<hash>/runs/<run-id>/
+~/.consensflow/workspaces/<workspace>-<hash>/runs/<run-id>/
 ```
 
 ## Prompt flow

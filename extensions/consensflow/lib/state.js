@@ -9,11 +9,15 @@ export const PARTICIPANT_KINDS = ["pi", "claude-code", "codex", "opencode", "ima
 export const TOOL_POLICIES = ["readonly", "workspace-write", "full-auto"];
 export const SKILLS_POLICIES = ["default", "none", "explicit"];
 
-// Per-tool participant store: pi and the Claude Code sibling (consensflow-cc) keep separate
-// rosters under the shared config home — ~/.consensflow/consensflow-pi/ here. CONSENSFLOW_HOME
-// overrides the parent home (tests point it at a temp dir).
+// Config home shared by both host tools (~/.consensflow; CONSENSFLOW_HOME overrides it — tests
+// point it at a temp dir). Participant config and run artifacts all live directly under this
+// home; there are no per-tool config roots.
+export function configHome() {
+  return process.env.CONSENSFLOW_HOME || path.join(os.homedir(), ".consensflow");
+}
+
 export function configRoot() {
-  return path.join(process.env.CONSENSFLOW_HOME || path.join(os.homedir(), ".consensflow"), "consensflow-pi");
+  return configHome();
 }
 
 // Workspace artifacts (runs, current.json) live under the config home too, keyed by workspace
@@ -33,8 +37,9 @@ export function cfRoot(cwd) {
   return path.join(configRoot(), "workspaces", workspaceKey(cwd));
 }
 
+// Shared across both host tools so participants are defined once and usable from either.
 export function participantsPath(_cwd) {
-  return path.join(configRoot(), "participants.json");
+  return path.join(configHome(), "participants.json");
 }
 
 export function currentPath(cwd) {

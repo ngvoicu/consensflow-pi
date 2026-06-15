@@ -46,7 +46,7 @@ Runs @zeus as an isolated, one-shot subprocess:
    no memory of past calls, no live access to your session — just the packet
    ▼
 Saves everything as an artifact:
-   ~/.consensflow/consensflow-pi/workspaces/<workspace>/runs/<run-id>/{packet.md, stdout.txt, stderr.txt, result.json}
+   ~/.consensflow/workspaces/<workspace>/runs/<run-id>/{packet.md, stdout.txt, stderr.txt, result.json}
    ▼
 Shows @zeus's answer back in your Pi session
    ▼
@@ -90,8 +90,10 @@ pi install ./consensflow-pi
 **Verify**
 
 ```text
-/cf doctor      # shows which engine CLIs are installed and working
-/cf status      # shows your configured participants
+/cf doctor                # shows which engine CLIs are installed and working
+/cf status                # shows your configured participants
+/consensflow:doctor       # namespaced aliases match the Claude Code plugin
+/consensflow:status
 ```
 
 **Uninstall** any time with `pi remove <source>` (the same URL or path you installed) — your participant config is left untouched.
@@ -201,12 +203,13 @@ The popular models already ship as presets (the tables above), so usually you ju
 
 ### Step 3 — Ask a participant
 
-Three equivalent ways:
+Four equivalent ways:
 
 ```text
-@zeus What's the riskiest part of this design?            # mention (anywhere in the line)
-/zeus What's the riskiest part of this design?            # dedicated command (after /reload)
-/cf ask @zeus What's the riskiest part of this design?    # generic router
+@zeus What's the riskiest part of this design?                   # mention (anywhere in the line)
+/zeus What's the riskiest part of this design?                   # dedicated command (after /reload)
+/cf ask @zeus What's the riskiest part of this design?           # generic router
+/consensflow:cf ask @zeus What's the riskiest part of this design?  # namespaced router
 ```
 
 A few real examples:
@@ -226,14 +229,17 @@ A few real examples:
 The reply appears inline in Pi. Every run is also saved under the ConsensFlow home — never inside your project:
 
 ```text
-~/.consensflow/consensflow-pi/workspaces/<workspace>/runs/<run-id>/
+~/.consensflow/workspaces/<workspace>/runs/<run-id>/
   packet.md      # exactly what the participant was sent
   stdout.txt     # raw engine output
   stderr.txt     # raw engine errors/progress
-  result.json    # parsed answer + metadata
+  result.json    # parsed answer + metadata (incl. transcriptPath)
+  transcript.md  # human-readable thinking / tool calls / answer — the durability backstop
 ```
 
-After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it.
+**Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive (via `cf_run_participant`'s `onUpdate`) — foreground-incremental. Every text-CLI run also writes `transcript.md` into the run dir so a killed or backgrounded run isn't lost; on a timeout you get the partial trail under a clear header, never a raw event dump.
+
+After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it. **Per-call write:** a participant is read-only by default; pass `cf_run_participant` a `toolsPolicy` of `workspace-write`/`full-auto` to make it write-capable for one run — no second roster entry needed.
 
 Then you, the lead, decide: implement all of it, some of it, or none.
 
@@ -278,8 +284,8 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 
 ## Where config and artifacts live
 
-- **Participants (global, per tool):** `~/.consensflow/consensflow-pi/participants.json` — set up `@zeus` once, use him from any project. The Claude Code sibling (consensflow-cc) keeps its own same-format roster under `~/.consensflow/consensflow-cc/`; copy entries between the two files to share them.
-- **Run artifacts (per workspace):** `~/.consensflow/consensflow-pi/workspaces/<workspace>-<hash>/runs/…` — stored in the home; nothing is ever created inside your project.
+- **Participants (global, shared across tools):** `~/.consensflow/participants.json` — set up `@zeus` once and use him from any project *and* from the Claude Code sibling (consensflow-cc); both tools read the same roster.
+- **Run artifacts (per workspace):** `~/.consensflow/workspaces/<workspace>-<hash>/runs/…` — stored in the home; nothing is ever created inside your project.
 
 ---
 
@@ -297,10 +303,18 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 /cf participants show @name
 /cf participants remove @name
 
+# Claude Code-style namespaced aliases in Pi:
+/consensflow:cf [status|doctor|participants <…>|run @name <prompt>|ask @name <prompt>|@name <prompt>]
+/consensflow:status
+/consensflow:doctor
+/consensflow:presets
+/consensflow:participants [list|presets|add|show|remove|add <…>]
+
 @name <prompt>                   # ask — mention anywhere in the line
 /name <prompt>                   # dedicated command (after /reload)
 /cf @name <prompt>               # generic router
 /cf ask @name <prompt>
+/consensflow:cf @name <prompt>   # namespaced generic router
 ```
 
 Preset add flags: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`.

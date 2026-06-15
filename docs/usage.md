@@ -4,7 +4,7 @@ ConsensFlow Pi uses natural-language prompts to one named participant at a time.
 
 ## Add participants
 
-Participants are stored globally in `~/.consensflow/consensflow-pi/participants.json` (per-tool; the Claude Code sibling keeps its own roster under `~/.consensflow/consensflow-cc/`). Add them from a preset, rename a preset, or define a fully custom participant.
+Participants are stored in the shared roster `~/.consensflow/participants.json`, used by both consensflow-pi and consensflow-cc. Add a participant in either tool and it is visible in the other. There are no per-tool config roots.
 
 ```text
 /cf participants presets
@@ -31,12 +31,13 @@ Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--descri
 
 ## Ask directly
 
-Each participant has its own command (`/<name>`); a bare mention or the generic router also work.
+Each participant has its own command (`/<name>`); a bare mention, the generic router, and the Claude Code-style namespaced router also work.
 
 ```text
 /zeus What do you think about this approach?
 @zeus What do you think about this approach?
 /cf @athena Review the auth flow in src/login.ts and tell me only blockers.
+/consensflow:cf @athena Review the auth flow in src/login.ts and tell me only blockers.
 ```
 
 ## Ask for questions

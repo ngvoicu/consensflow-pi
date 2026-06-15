@@ -7,11 +7,13 @@ import { decodeChatGptAccountId, generateImage, IMAGE_TRIGGER_DEFAULT, saveImage
 import { formatPresets, getPreset, listPresetIds, participantFromPreset } from "./extensions/consensflow/lib/presets.js";
 import {
   cfRoot,
+  configHome,
   configRoot,
   ensureCfDirs,
   getParticipant,
   loadCurrent,
   loadParticipants,
+  participantsPath,
   recordLatestRun,
   removeParticipant,
   runsRoot,
@@ -19,6 +21,7 @@ import {
 } from "./extensions/consensflow/lib/state.js";
 import { createId, parseOptions, parseParticipantPrompt, slugify, tokenize } from "./extensions/consensflow/lib/utils.js";
 import { effectiveToolsPolicy, runNamedParticipant } from "./extensions/consensflow/lib/workflows.js";
+import { renderEvent } from "./extensions/consensflow/lib/transcript-events.js";
 
 const EXT = "consensflow";
 
@@ -40,20 +43,7 @@ export default async function consensflow(pi: ExtensionAPI) {
     return { action: "handled" as const };
   });
 
-  pi.registerCommand("cf", {
-    description: "ConsensFlow: manage named participants or send a natural-language prompt to one participant",
-    handler: async (args, ctx) => handleCf(args, ctx, pi),
-  });
-
-  pi.registerCommand("consensflow", {
-    description: "Alias for /cf",
-    handler: async (args, ctx) => handleCf(args, ctx, pi),
-  });
-
-  pi.registerCommand("participants", {
-    description: "ConsensFlow participant management",
-    handler: async (args, ctx) => handleCf(`participants ${args}`, ctx, pi),
-  });
+  registerCoreCommands(pi);
 
   pi.registerTool({
     name: "cf_list_participants",
@@ -63,7 +53,7 @@ export default async function consensflow(pi: ExtensionAPI) {
     parameters: Type.Object({}),
     async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
       const participants = await loadParticipants(ctx.cwd);
-      return { content: [{ type: "text", text: formatParticipants(participants) }], details: { participants, configRoot: configRoot() } };
+      return { content: [{ type: "text", text: formatParticipants(participants, ctx.cwd) }], details: { participants, ...storeDetails(ctx.cwd) } };
     },
   });
 
@@ -78,6 +68,7 @@ export default async function consensflow(pi: ExtensionAPI) {
       context: Type.Optional(Type.String({ description: "Optional focused note/brief added on top of the auto-included session handoff." })),
       includeHandoff: Type.Optional(Type.Boolean({ description: "Attach the current session transcript as context. Defaults to true." })),
       timeoutMs: Type.Optional(Type.Number({ description: "Optional timeout override" })),
+      toolsPolicy: Type.Optional(Type.String({ description: "Per-call tools override: 'workspace-write' or 'full-auto' to make this read-only participant write-capable for this run, or 'readonly' to force read-only. Defaults to the participant's stored policy. Write stays gated by the consent rule above." })),
     }),
     async execute(_toolCallId, params, signal, onUpdate, ctx) {
       const participant = await getParticipant(ctx.cwd, params.participant);
@@ -105,6 +96,13 @@ export default async function consensflow(pi: ExtensionAPI) {
         extraContext: params.context,
         signal,
         timeoutMs: params.timeoutMs,
+        toolsPolicy: params.toolsPolicy,
+        // Stream the participant's normalized thinking / tool calls / answer into the Pi UI as it
+        // arrives — the pi analog of cc's --stream (foreground-incremental observability).
+        onEvent: (event: any) => {
+          const line = renderEvent(event);
+          if (line) onUpdate?.({ content: [{ type: "text", text: line }] });
+        },
       });
       result.handoffSummary = summarizeHandoff(handoff, includeHandoff);
       return { content: [{ type: "text", text: renderRunResult(result) }], details: result };
@@ -114,7 +112,71 @@ export default async function consensflow(pi: ExtensionAPI) {
   await registerParticipantCommands(pi);
 }
 
-const RESERVED_COMMAND_NAMES = new Set(["cf", "consensflow", "participants"]);
+type CoreCommandSpec = {
+  name: string;
+  description: string;
+  toCfArgs: (args: string) => string;
+};
+
+const CORE_COMMANDS: CoreCommandSpec[] = [
+  {
+    name: "cf",
+    description: "ConsensFlow: manage named participants or send one prompt to one participant",
+    toCfArgs: (args) => args,
+  },
+  {
+    name: "consensflow",
+    description: "Alias for /cf",
+    toCfArgs: (args) => args,
+  },
+  {
+    name: "participants",
+    description: "ConsensFlow participant management",
+    toCfArgs: (args) => prefixedArgs("participants", args),
+  },
+  // Claude Code-style namespaced aliases, so Pi exposes the same discoverable command surface.
+  {
+    name: "consensflow:cf",
+    description: "ConsensFlow: manage named participants or send one prompt to one participant",
+    toCfArgs: (args) => args,
+  },
+  {
+    name: "consensflow:status",
+    description: "ConsensFlow: show configured participants and the latest run",
+    toCfArgs: () => "status",
+  },
+  {
+    name: "consensflow:doctor",
+    description: "ConsensFlow: check which engine CLIs are installed and working",
+    toCfArgs: () => "doctor",
+  },
+  {
+    name: "consensflow:presets",
+    description: "ConsensFlow: list the curated participant presets",
+    toCfArgs: () => "participants presets",
+  },
+  {
+    name: "consensflow:participants",
+    description: "ConsensFlow: list or manage your participants (add, show, remove, presets)",
+    toCfArgs: (args) => prefixedArgs("participants", args),
+  },
+];
+
+function registerCoreCommands(pi: ExtensionAPI) {
+  for (const command of CORE_COMMANDS) {
+    pi.registerCommand(command.name, {
+      description: command.description,
+      handler: async (args, ctx) => handleCf(command.toCfArgs(String(args ?? "")), ctx, pi),
+    });
+  }
+}
+
+function prefixedArgs(prefix: string, args: string) {
+  const trimmed = String(args ?? "").trim();
+  return trimmed ? `${prefix} ${trimmed}` : prefix;
+}
+
+const RESERVED_COMMAND_NAMES = new Set(CORE_COMMANDS.map((command) => command.name));
 
 // Register a dedicated `/<id>` command per configured participant so you can talk to them
 // directly (e.g. `/zeus ...`), instead of only the generic `/cf @zeus ...`. Participants are
@@ -179,6 +241,7 @@ async function handleCf(args: string, ctx: any, pi: ExtensionAPI) {
       case "participants":
       case "participant":
         return await handleParticipants(tokens, ctx, pi);
+      case "run":
       case "ask":
       case "to": {
         const parsed = parseParticipantPrompt(tokens, known);
@@ -200,14 +263,15 @@ async function handleStatus(ctx: any, pi: ExtensionAPI) {
   const markdown = [
     "# ConsensFlow status",
     "",
-    `Config root: ${configRoot()}`,
+    `ConsensFlow home: ${configHome()}`,
+    `Participants file: ${participantsPath(ctx.cwd)}`,
     `Artifact root for this workspace: ${cfRoot(ctx.cwd)}`,
     `Participants: ${participants.length}`,
     `Latest run: ${current.latestRunId ?? "none"}`,
     "",
-    formatParticipants(participants),
+    formatParticipants(participants, ctx.cwd),
   ].join("\n");
-  sendCfMessage(pi, markdown, { participants, current, configRoot: configRoot(), artifactRoot: cfRoot(ctx.cwd) });
+  sendCfMessage(pi, markdown, { participants, current, ...storeDetails(ctx.cwd), artifactRoot: cfRoot(ctx.cwd) });
 }
 
 async function handleDoctor(ctx: any, pi: ExtensionAPI) {
@@ -229,7 +293,8 @@ async function handleDoctor(ctx: any, pi: ExtensionAPI) {
   const lines = [
     "# ConsensFlow doctor",
     "",
-    `Config root: ${configRoot()}`,
+    `ConsensFlow home: ${configHome()}`,
+    `Participants file: ${participantsPath(ctx.cwd)}`,
     "",
     ...rows.map((row) => {
       const need = row.neededBy.length > 0 ? ` — needed by ${row.neededBy.join(", ")}` : " — not used by any participant";
@@ -242,14 +307,14 @@ async function handleDoctor(ctx: any, pi: ExtensionAPI) {
   if (missing.length > 0) {
     lines.push("", "Missing engines that configured participants need:", ...missing.map((row) => `  - ${row.binary} (needed by ${row.neededBy.join(", ")})`));
   }
-  sendCfMessage(pi, lines.join("\n"), { rows, imageParticipants, configRoot: configRoot() });
+  sendCfMessage(pi, lines.join("\n"), { rows, imageParticipants, ...storeDetails(ctx.cwd) });
 }
 
 async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) {
   const sub = tokens.shift() ?? "list";
   if (sub === "list") {
     const participants = await loadParticipants(ctx.cwd);
-    return sendCfMessage(pi, formatParticipants(participants), { participants, configRoot: configRoot() });
+    return sendCfMessage(pi, formatParticipants(participants, ctx.cwd), { participants, ...storeDetails(ctx.cwd) });
   }
   if (sub === "presets" || sub === "preset") {
     return sendCfMessage(pi, formatPresets(), { presets: listPresetIds() });
@@ -282,7 +347,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
         participants.push(await upsertParticipant(ctx.cwd, participantFromPreset(presetId, presetOverrides(parsed.flags))));
       }
       ctx.ui.notify(`Saved ${participants.length} ConsensFlow participants`, "info");
-      return sendCfMessage(pi, `Saved presets in ${configRoot()}.\n\n${participants.map(formatParticipantLine).join("\n")}\n\n${reloadHint()}`, { participants, configRoot: configRoot() });
+      return sendCfMessage(pi, `Saved presets in ${participantsPath(ctx.cwd)}.\n\n${participants.map(formatParticipantLine).join("\n")}\n\n${reloadHint()}`, { participants, ...storeDetails(ctx.cwd) });
     }
 
     // Preset path: positional names a known preset; --name optionally renames it.
@@ -291,7 +356,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
       const participant = await upsertParticipant(ctx.cwd, participantFromPreset(presetRef, presetOverrides(parsed.flags)));
       ctx.ui.notify(`Saved @${participant.id}`, "info");
       const from = participant.preset && participant.preset !== participant.id ? ` from preset \`${participant.preset}\`` : "";
-      return sendCfMessage(pi, `Saved participant @${participant.id}${from} in ${configRoot()}.\n\n${formatParticipantLine(participant)}\n\n${reloadHint()}`, { participant, configRoot: configRoot() });
+      return sendCfMessage(pi, `Saved participant @${participant.id}${from} in ${participantsPath(ctx.cwd)}.\n\n${formatParticipantLine(participant)}\n\n${reloadHint()}`, { participant, ...storeDetails(ctx.cwd) });
     }
 
     // Custom path: explicit custom intent via --name or any backend flag. A positional serves as the name.
@@ -301,7 +366,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
       if (!name) throw new Error("Custom participant needs a name: /cf participants add --name <name> --kind <kind> --model <model> ...");
       const participant = await upsertParticipant(ctx.cwd, customParticipantInput(name, parsed.flags));
       ctx.ui.notify(`Saved @${participant.id}`, "info");
-      return sendCfMessage(pi, `Saved custom participant @${participant.id} in ${configRoot()}.\n\n${formatParticipantLine(participant)}\n\n${reloadHint()}`, { participant, configRoot: configRoot() });
+      return sendCfMessage(pi, `Saved custom participant @${participant.id} in ${participantsPath(ctx.cwd)}.\n\n${formatParticipantLine(participant)}\n\n${reloadHint()}`, { participant, ...storeDetails(ctx.cwd) });
     }
 
     if (presetRef) {
@@ -488,26 +553,30 @@ function addUsage() {
   ].join("\n");
 }
 
-function formatParticipants(participants: any[]) {
+function storeDetails(cwd: string) {
+  return { configHome: configHome(), participantsPath: participantsPath(cwd), toolArtifactRoot: configRoot() };
+}
+
+function formatParticipants(participants: any[], cwd = process.cwd()) {
   if (participants.length === 0) {
     return [
       "# ConsensFlow participants",
       "",
-      `Config root: ${configRoot()}`,
+      `Participants file: ${participantsPath(cwd)}`,
       "",
       "No participants configured yet.",
       "",
       "Create participants:",
       "```text",
-      "/cf participants presets",
-      "/cf participants add zeus                     # from a preset",
-      "/cf participants add zeus --name Deepreview   # preset backend, custom name",
-      "/cf participants add all                      # every preset",
-      "/cf participants add --name Builder --kind codex --model gpt-5.5 --tools workspace-write",
+      "/consensflow:presets                                    # list the curated presets",
+      "/consensflow:participants add zeus                      # add a preset",
+      "/consensflow:participants add zeus --name Deepreview    # preset backend, custom name",
+      "/consensflow:participants add all                       # every preset",
+      "/consensflow:participants add --name Builder --kind codex --model gpt-5.5 --tools workspace-write",
       "```",
     ].join("\n");
   }
-  return ["# ConsensFlow participants", "", `Config root: ${configRoot()}`, "", ...participants.map(formatParticipantLine)].join("\n");
+  return ["# ConsensFlow participants", "", `Participants file: ${participantsPath(cwd)}`, "", ...participants.map(formatParticipantLine)].join("\n");
 }
 
 function formatParticipantLine(p: any) {
@@ -535,8 +604,12 @@ function summarizeHandoff(handoff: string, included: boolean) {
 function renderRunResult(result: any) {
   const writeCapable = effectiveToolsPolicy(result.participant) !== "readonly";
   const lines = [`# @${result.participant.id}`];
-  if (result.exitCode !== 0 || result.timedOut) {
-    lines.push("", `Run failed: exit ${result.exitCode}${result.timedOut ? " (timed out)" : ""} — artifacts: ${result.runDir}`);
+  if (result.timedOut) {
+    // A timeout is not a failure with a meaningful exit code — the partial trail below is the
+    // real signal. Don't print "exit 0", which reads as success.
+    lines.push("", `(timed out — partial output below; artifacts: ${result.runDir})`);
+  } else if (result.exitCode !== 0) {
+    lines.push("", `Run failed: exit ${result.exitCode} — artifacts: ${result.runDir}`);
   }
   if (result.handoffSummary?.startsWith("empty")) lines.push("", `Handoff: ${result.handoffSummary}`);
   if (writeCapable) lines.push("", "> Write-capable run: this participant could edit files and run commands. Inspect what changed in the workspace (e.g. `git status` / `git diff` in a repo) and review it before keeping or building on it.");
@@ -566,26 +639,29 @@ session as a handoff plus your prompt, and answers conversationally.
 Ask a participant (all equivalent):
 
 \`\`\`text
-/zeus What do you think about this approach?      # dedicated per-participant command
-@zeus What do you think about this approach?      # bare mention
-/cf @zeus What do you think about this approach?  # generic router
+/zeus What do you think about this approach?               # dedicated per-participant command
+@zeus What do you think about this approach?               # bare mention
+/cf @zeus What do you think about this approach?           # generic router
+/consensflow:cf @zeus What do you think about this approach?  # namespaced router
 \`\`\`
 
-Add participants (config is global, ${configRoot()}/participants.json):
+Add participants (shared across Pi and Claude Code, ${participantsPath(process.cwd())}):
 
 \`\`\`text
-/cf participants add zeus                          # from a preset
-/cf participants add zeus --name Deepreview        # preset backend, your own name -> /deepreview
-/cf participants add all                           # every preset
-/cf participants add --name Builder --kind codex --model gpt-5.5 --effort high \\
-    --tools workspace-write                        # fully custom, write-capable
+/consensflow:presets                                    # list the curated presets
+/consensflow:participants add zeus                      # add a preset
+/consensflow:participants add zeus --name Deepreview    # preset backend, your own name -> /deepreview
+/consensflow:participants add all                       # every preset
+/consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high \\
+    --tools workspace-write                             # fully custom, write-capable
 \`\`\`
 
 Admin commands:
 
-- \`/cf status\`
-- \`/cf doctor\`
-- \`/cf participants list|presets|add|show|remove\`
+- \`/cf status\` (or \`/consensflow:status\`)
+- \`/cf doctor\` (or \`/consensflow:doctor\`)
+- \`/cf participants presets\` (or \`/consensflow:presets\`)
+- \`/cf participants list|presets|add|show|remove\` (or \`/consensflow:participants …\`)
 
 Rules:
 

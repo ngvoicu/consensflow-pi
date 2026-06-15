@@ -48,7 +48,7 @@ In short: ask freely, apply only with a green light.
 
 ## How participants are created
 
-Participants are configured globally under `~/.consensflow/consensflow-pi/participants.json` (set up once, use from any project; the Claude Code sibling keeps its own roster under `~/.consensflow/consensflow-cc/`). They come from curated presets or fully custom definitions:
+Participants are configured in the shared roster `~/.consensflow/participants.json` (set up once, use from any project, Pi, and the Claude Code sibling). There are no per-tool config roots. Participants come from curated presets or fully custom definitions:
 
 ```text
 /cf participants presets                      # list built-in presets
@@ -67,18 +67,19 @@ Presets (all read-only; the same model+effort family exists on every engine that
 - **Deep open-weights**: Kimi K2.7 Code — `@luna` (OpenCode), `@selene` (Pi, high thinking).
 - **Fast/cheap tier** (quick gut-checks): `@hermod` (Claude Haiku 4.5), `@nike`/`@sif` (Gemini 3.5 Flash on Pi/OpenCode), `@zephyros`/`@freya` (DeepSeek V4 Flash on Pi/OpenCode).
 - **Model zoo** (same OpenRouter models on two engines; Greek = pi, Norse = opencode): DeepSeek V4 Pro `@hades`/`@odin`, Gemini 3.1 Pro `@helios`/`@heimdall`, Grok 4.3 `@ares`/`@thor`, Qwen3.7 Max `@hephaestus`/`@tyr`, Llama 4 Maverick `@pan`/`@vidar`, Mistral Large `@aeolus`/`@njord`, MiniMax M3 `@metis`/`@mimir`.
-- **Image**: `@pygmalion` (kind=image) generates a picture with gpt-image-2 via your existing openai-codex login — prompt-only (no handoff), saved to the workspace's run dir under `~/.consensflow/consensflow-pi/workspaces/…` and shown inline.
+- **Image**: `@pygmalion` (kind=image) generates a picture with gpt-image-2 via your existing openai-codex login — prompt-only (no handoff), saved to the workspace's run dir under `~/.consensflow/workspaces/…` and shown inline.
 
-Run `/cf participants presets` for the full list. Model and effort strings pass through to the engine verbatim, so any identifier the engine accepts works.
+Run `/cf participants presets` or `/consensflow:presets` for the full list. Model and effort strings pass through to the engine verbatim, so any identifier the engine accepts works.
 
 ## How to ask
 
-Each configured participant gets a dedicated `/<name>` command; `@name` (anywhere in the line) and `/cf @name` also work:
+Each configured participant gets a dedicated `/<name>` command; `@name` (anywhere in the line), `/cf @name`, and the Claude Code-style `/consensflow:cf @name` also work:
 
 ```text
 @zeus What's the riskiest part of this design?            # mention, anywhere in the line
 /zeus What's the riskiest part of this design?            # dedicated command (after /reload)
 /cf @zeus What's the riskiest part of this design?        # generic router
+/consensflow:cf @zeus What's the riskiest part of this design?  # namespaced router
 ```
 
 A newly added participant's `/<name>` command becomes available after `/reload` in a running session; `@name` and `/cf @name` work immediately, and a fresh Pi session picks up the command automatically. A stray `@token` that is not a participant is ignored and goes to the lead as normal text.
