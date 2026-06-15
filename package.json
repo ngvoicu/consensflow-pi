@@ -15,7 +15,6 @@
     "index.ts",
     "extensions",
     "skills",
-    "prompts",
     "docs",
     "README.md",
     "AGENTS.md"
@@ -26,9 +25,6 @@
     ],
     "skills": [
       "./skills"
-    ],
-    "prompts": [
-      "./prompts"
     ]
   },
   "scripts": {

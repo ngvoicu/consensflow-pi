@@ -4,7 +4,7 @@ Pi-native ConsensFlow package — the sole project in this workspace. (The earli
 
 ## What this is
 
-A Pi package containing a TypeScript extension, prompt template, and skill for routing a natural-language prompt to one named participant at a time. It is installed into `pi` as a local extension (`pi list` shows it pointing at this directory) and loaded from source on each start.
+A Pi package containing a TypeScript extension and skill for routing a natural-language prompt to one named participant at a time. It is installed into `pi` as a local extension (`pi list` shows it pointing at this directory) and loaded from source on each start.
 
 Core direction:
 
@@ -31,7 +31,7 @@ Core direction:
   - `transcript-events.js` — normalized cross-engine event model (`thinking|tool_call|tool_result|text|final`) + per-engine adapters (opencode/codex/pi/claude-code) + `adaptLine`/`renderEvent`/`renderTrail`/`surfaceOutput` + bounded trail (`MAX_EVENTS`/`MAX_EVENT_CHARS`). **Parity-locked: byte-identical with cc** (enforced by the parity test).
   - `image.js` — `image`-kind generation: Codex Responses backend → gpt-image-2 (HTTP/SSE) + base64→PNG save. Pure helpers unit-tested.
   - `utils.js` — tokenize/slugify/path-validation helpers (`resolveInside` is realpath-checked).
-- `skills/consensflow/SKILL.md`, `prompts/cf-ask.md`, `docs/`, `tests/core.test.mjs`.
+- `skills/consensflow/SKILL.md`, `docs/`, `tests/core.test.mjs`.
 
 ## Commands & verify
 
@@ -54,7 +54,7 @@ There is no local `node_modules` or `dist` — peer deps come from the host `pi`
 - Send to one participant at a time; reject multiple leading mentions unless the product direction changes explicitly.
 - Participants should respond to the user's prompt as written; do not inject terms like grill/handoff/spec-review unless the user used them.
 - Participants run with their configured tools. `effectiveToolsPolicy` (workflows.js) treats a missing policy as `readonly` — write access requires an explicit `workspace-write`/`full-auto`. Enforcement is per engine (runners.js): codex `--sandbox read-only` (OS-level), claude `--allowedTools` + `--disallowedTools` deny list, pi `--tools` allowlist, opencode `OPENCODE_PERMISSION={"edit":"deny","bash":"deny"}` env (its defaults are allow). Claude/codex children also get `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` stripped so runs stay on the subscription logins.
-- Consent gate: consulting a participant is free and proactive, but the lead must never apply/keep a participant's response — or a write-capable participant's file edits — without explicit user approval, unless pre-authorized. The gate lives in `cf_run_participant`'s description/promptSnippet, `skills/consensflow/SKILL.md`, and `prompts/cf-ask.md`; keep them in sync when changing it.
+- Consent gate: consulting a participant is free and proactive, but the lead must never apply/keep a participant's response — or a write-capable participant's file edits — without explicit user approval, unless pre-authorized. The gate lives in `cf_run_participant`'s description/promptSnippet and `skills/consensflow/SKILL.md`; keep them in sync when changing it.
 - Image participants (`kind: image`) bypass the CLI runner: handled in `index.ts` (`runImageParticipant`/`generateImageArtifact`), which calls `image.js` with the `openai-codex` token from `ctx.modelRegistry` (a ctx method, not a host import — the no-host-import rule stays intact). They get the prompt only (no packet/handoff), save a PNG under the run dir, and render inline via an image content block. `buildRunnerInvocation` throws on `image` as a loud backstop so it can never silently reach the CLI path.
 - **Streaming observability (primary):** `cf_run_participant` streams normalized thinking / tool-call / answer events into the Pi UI via its `onUpdate` callback (`renderEvent` per event) as the run progresses — **foreground-incremental** (the cc analog is the `--stream` flag). Every text-CLI run also writes a human-readable `transcript.md` (the event trail) into its run dir as a **durability backstop**, with `result.transcriptPath` pointing to it; on timeout/no-answer the surfaced output is the bounded trail under a clear header, never the raw JSONL stream.
 - **Per-call tools override:** `cf_run_participant` takes an optional `toolsPolicy` (`workspace-write`/`full-auto`/`readonly`) that overrides the stored policy for one run — one roster entry, read-only by default, write made explicit per call; the consent gate is unchanged.
