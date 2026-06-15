@@ -14,13 +14,13 @@ ConsensFlow lets you keep a roster of **participants**. A participant is just *o
 2. runs that agent in an isolated subprocess as a **one-shot** (your session stays usable),
 3. and shows you its answer.
 
-Think of it as a panel of advisors on speed-dial. **You stay in charge** (you're "the lead") — they advise, and you decide what to keep. It is **not** a group chat, not parallel fan-out, not a fixed workflow. One question → one participant → one answer, every time.
+Think of it as a bench of advisors/helpers on speed-dial. **You stay in charge** (you're "the lead") — they advise, and you decide what to keep. It is **not** a group chat, not parallel fan-out, not a fixed workflow. One question → one participant → one answer, every time.
 
 The whole idea in five bullets:
 
 - **Participant** = a named *(agent + model)* combo. Configure once, reuse from any project.
 - **One at a time.** `@zeus @athena …` is rejected — ask one, read, then ask the next.
-- **Safe by default.** A participant starts in review mode; use `--rw` or `--tools workspace-write` only when you want that call to edit files or run commands.
+- **Safe by default.** A participant starts in safe mode (no write tools), but it is not review-only; use `--rw` or `--tools workspace-write` when you want that call to edit files or run commands.
 - **One-shot, but context-aware.** Each call is fresh (no memory of past calls), yet it always receives the current session handoff — *including earlier participants' answers* — so the 2nd agent you ask can build on the 1st.
 - **The lead can ask too — and asks before applying.** Pi will consult a participant on its own initiative when a second opinion would help, then report back and get your go-ahead before applying anything — unless you pre-authorized it (e.g. "get Zeus's take and apply what makes sense").
 
@@ -37,12 +37,12 @@ ConsensFlow sees exactly one @mention  →  intercepts the message
    ▼
 It builds a "packet" for @zeus:
    • who @zeus is        (claude-code · claude-opus-4-8 · max)
-   • mode line           (review mode — or write mode if you made it write-capable)
+   • mode line           (safe mode — or write mode if you made it write-capable)
    • handoff             (a snapshot of THIS session + earlier @participant replies)
    • your question
    ▼
 Runs @zeus as an isolated, one-shot subprocess:
-   claude -p … --model claude-opus-4-8 --effort max   (default review mode)
+   claude -p … --model claude-opus-4-8 --effort max   (default safe mode)
    no memory of past calls, no live access to your session — just the packet
    ▼
 Saves everything as an artifact:
@@ -170,7 +170,7 @@ Why some cells differ: `max` exists only on claude-code — pi's thinking scale 
 
 Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
-Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets use the default review mode; add `--rw` for one write-capable run, or create/update a participant with `--tools workspace-write` if it should write by default.
+Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets use default safe mode (no write tools); add `--rw` for one write-capable run, or create/update a participant with `--tools workspace-write` if it should write by default.
 
 Add one, all, or a renamed copy:
 
@@ -192,12 +192,12 @@ The popular models already ship as presets (the tables above), so usually you ju
 # Any OpenRouter model via Pi (reasoning via --thinking off | minimal | low | medium | high | xhigh)
 /consensflow:participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
 
-# A write-capable participant, not just a reviewer (OpenCode; effort maps to --variant)
+# A participant configured to write by default (OpenCode; effort maps to --variant)
 /consensflow:participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.7-code \
     --effort max --tools workspace-write
 ```
 
-> **Default vs write.** By default a participant is a reviewer. To let one edit files and run commands, pass `--tools workspace-write` (or `full-auto`) when creating it, or use `--rw` on a single run — write access is never implicit.
+> **Default vs write.** By default a participant runs without write tools, but it can still plan, critique, explain, or propose code. To let it actually edit files and run commands, pass `--tools workspace-write` (or `full-auto`) when creating it, or use `--rw` on a single run — write access is never implicit.
 
 ### Step 3 — Ask a participant
 
@@ -307,7 +307,7 @@ Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thin
 ## Good to know
 
 - **One-shot:** participants don't remember previous calls. Continuity comes from the handoff (re-sent each time), which now includes earlier `@participant` answers — so a later participant sees an earlier one's reply. Great for debate; if you want a genuinely *independent* opinion, ask that participant **first**, before others have replied.
-- **Isolated & safe:** each participant runs in its own one-shot subprocess, started in your workspace; a `--cwd` that escapes it is rejected before launch (realpath-checked). Isolation comes from each engine's tool policy — a true OS sandbox only for Codex — so treat the default review mode as policy enforcement, not a hard sandbox. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself. Default mode is enforced with each engine's own mechanism: an OS no-write sandbox for Codex, allow+deny tool lists for Claude Code, a limited tool allowlist for Pi, and a deny-edit/bash permission override (`OPENCODE_PERMISSION`) for OpenCode.
+- **Isolated & safe:** each participant runs in its own one-shot subprocess, started in your workspace; a `--cwd` that escapes it is rejected before launch (realpath-checked). Isolation comes from each engine's tool policy — a true OS sandbox only for Codex — so treat the default safe mode as policy enforcement, not a hard sandbox. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself. Default mode is enforced with each engine's own mechanism: an OS no-write sandbox for Codex, allow+deny tool lists for Claude Code, a limited tool allowlist for Pi, and a deny-edit/bash permission override (`OPENCODE_PERMISSION`) for OpenCode.
 - **You're always the lead.** ConsensFlow routes your question and shows you the answer — it never implements or keeps anything on its own. The lead consults freely, but summarizes a participant's response (or a write-capable participant's file edits) and asks before applying it, unless you've already told it to proceed.
 
 ---

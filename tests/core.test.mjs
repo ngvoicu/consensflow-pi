@@ -88,7 +88,7 @@ test("createPacket is conversational, mode-aware, and carries handoff + diff", a
     assert.match(packet, /Read-only: you can inspect the workspace/);
     assert.match(packet, /## Handoff — current session/);
     assert.match(packet, /working on the packet/);
-    // The rigid reviewer template is gone.
+    // The rigid old task template is gone.
     assert.doesNotMatch(packet, /Required output format/);
     assert.doesNotMatch(packet, /1\. Direct answer/);
     assert.doesNotMatch(packet, /Do not edit, write, or mutate files/);
@@ -219,8 +219,8 @@ test("runner invocation maps tool policies", () => {
 });
 
 test("readonly enforcement reaches every engine: claude allow+deny lists, opencode permission env", () => {
-  // Claude readonly: explorers allowed, write tools explicitly denied (a user-level Bash
-  // allowlist must not leak write capability into a read-only reviewer).
+  // Claude default safe mode: explorers allowed, write tools explicitly denied (a user-level Bash
+  // allowlist must not leak write capability into a safe-mode participant).
   const claude = buildRunnerInvocation({ kind: "claude-code", toolsPolicy: "readonly" }, "/tmp/packet.md", "/repo");
   assert.ok(claude.args.includes("Read,Grep,Glob"));
   const denyIndex = claude.args.indexOf("--disallowedTools");

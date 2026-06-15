@@ -4,7 +4,7 @@ Guidance for Claude Code working in this directory. This is the sole ConsensFlow
 
 ## What it is
 
-A **Pi** (`@earendil-works/pi-coding-agent`) extension that routes one natural-language prompt to one named participant at a time. The participant runs as an isolated child coding-agent subprocess (`claude` / `codex` / `opencode` / `pi`), gets a packet (identity + mode + a handoff of the current session + your prompt), and returns an answer shown back in Pi. Think "calling an advisor": one-shot, no memory, but it sees a snapshot of the session.
+A **Pi** (`@earendil-works/pi-coding-agent`) extension that routes one natural-language prompt to one named participant at a time. The participant runs as an isolated child coding-agent subprocess (`claude` / `codex` / `opencode` / `pi`), gets a packet (identity + mode + a handoff of the current session + your prompt), and returns an answer shown back in Pi. Think "calling an advisor/helper": one-shot, no memory, but it sees a snapshot of the session.
 
 - **How it works, end to end:** `README.md` (flow, packet contents, runner table, use cases, safety model).
 - **Conventions, source map, invariants:** `AGENTS.md`. Read it before changing code.
@@ -26,7 +26,7 @@ A **Pi** (`@earendil-works/pi-coding-agent`) extension that routes one natural-l
 - `ctx.sessionManager.getBranch()` returns entries **root→leaf (oldest first) — do not reverse**. The `.d.ts` comment is misleading; verified in the host's `session-manager.js`.
 - **Never add a new runtime import of `@earendil-works/pi-coding-agent`** — read the transcript via the `ctx.sessionManager` methods already provided. (Type-only imports are fine.)
 - Participants live in the shared roster `~/.consensflow/participants.json`; both host tools use it. If the shared roster is missing, `state.js` performs a one-time migration from old per-tool rosters before treating the root file as authoritative.
-- Participants use default review mode: internally `effectiveToolsPolicy` treats a missing tools policy as `readonly`; only an explicit `workspace-write`/`full-auto` policy makes one write-capable.
+- Participants use default safe mode: internally `effectiveToolsPolicy` treats a missing tools policy as `readonly`; only an explicit `workspace-write`/`full-auto` policy makes one write-capable.
 - Any subprocess `--cwd` must validate as nested inside the workspace before spawning (`resolveInside`).
 - Participant replies persist as `custom_message` entries (not normal messages) and are surfaced into later participants' handoffs (cross-pollination).
 - Consent gate: the lead consults participants freely, but never acts on a participant's response or keeps a write-capable participant's file edits without user approval (unless pre-authorized). Source of truth: `cf_run_participant` description/promptSnippet and `skills/consensflow/SKILL.md` — don't weaken one without the other.

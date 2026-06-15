@@ -60,15 +60,15 @@ export default async function consensflow(pi: ExtensionAPI) {
   pi.registerTool({
     name: "cf_run_participant",
     label: "CF Ask Participant",
-    description: "Consult one named ConsensFlow participant as an advisor. It receives the current session as a handoff plus your prompt, runs with its configured tools, and returns its answer. Use this freely and on your own initiative to get reviews, second opinions, questions, or help — you do not need the user's permission to consult. But do NOT apply, merge, commit, adopt, or otherwise act on what it returns — neither its advice nor a write-capable participant's file changes — without first showing the user (a summary plus your recommendation) and getting their approval, unless the user has already told you to proceed.",
-    promptSnippet: "Consult one named ConsensFlow participant as an advisor (asking is free — no user permission needed). Then report its answer to the user and get approval before acting on it: never apply a participant's advice or changes unprompted unless the user already said to proceed.",
+    description: "Consult one named ConsensFlow participant as an advisor/helper. It receives the current session as a handoff plus your prompt, runs with its configured tools, and returns its answer. Use this freely and on your own initiative for second opinions, questions, implementation help, or design/code critique — you do not need the user's permission to consult. But do NOT apply, merge, commit, adopt, or otherwise act on what it returns — neither its advice nor a write-capable participant's file changes — without first showing the user (a summary plus your recommendation) and getting their approval, unless the user has already told you to proceed.",
+    promptSnippet: "Consult one named ConsensFlow participant as an advisor/helper (asking is free — no user permission needed). Then report its answer to the user and get approval before acting on it: never apply a participant's advice or changes unprompted unless the user already said to proceed.",
     parameters: Type.Object({
       participant: Type.String({ description: "Participant name or @mention, e.g. @zeus" }),
       prompt: Type.String({ description: "Natural-language request for that participant" }),
       context: Type.Optional(Type.String({ description: "Optional focused note/brief added on top of the auto-included session handoff." })),
       includeHandoff: Type.Optional(Type.Boolean({ description: "Attach the current session transcript as context. Defaults to true." })),
       timeoutMs: Type.Optional(Type.Number({ description: "Optional timeout override" })),
-      toolsPolicy: Type.Optional(Type.String({ description: "Per-call write override: 'workspace-write' or 'full-auto'. Omit for the default review mode. Defaults to the participant's stored policy. Write stays gated by the consent rule above." })),
+      toolsPolicy: Type.Optional(Type.String({ description: "Per-call write override: 'workspace-write' or 'full-auto'. Omit for default safe mode. Defaults to the participant's stored policy. Write stays gated by the consent rule above." })),
     }),
     async execute(_toolCallId, params, signal, onUpdate, ctx) {
       const participant = await getParticipant(ctx.cwd, params.participant);
@@ -596,7 +596,7 @@ function formatParticipantLine(p: any) {
   const cwd = p.cwd ? ` cwd=${p.cwd}` : "";
   const skills = p.kind === "pi" ? ` skills=${p.skillsPolicy ?? "default"}` : "";
   const preset = p.preset ? ` preset=${p.preset}` : "";
-  // Read-only is the quiet/default display. Only surface persistent write-capable roster entries;
+  // Safe mode is the quiet/default display. Only surface persistent write-capable roster entries;
   // per-call --rw / --tools overrides remain explicit at run time.
   const policy = effectiveToolsPolicy(p);
   const access = policy === "readonly" ? "" : ` access=${policy}`;
@@ -612,7 +612,7 @@ function summarizeHandoff(handoff: string, included: boolean) {
   return `attached (${Math.max(1, Math.round(Buffer.byteLength(handoff, "utf8") / 1024))} KB)`;
 }
 
-// Just the answer on a clean default-mode run. Diagnostics appear only when they matter: the run
+// Just the answer on a clean default safe-mode run. Diagnostics appear only when they matter: the run
 // failed, the handoff was unexpectedly empty, or the participant could have written to the
 // workspace. Full metadata stays in result.json and the message details.
 function renderRunResult(result: any) {
@@ -680,7 +680,7 @@ Admin commands:
 Rules:
 
 - Send to one participant at a time.
-- Participants use default review mode. Use \`--rw\` / \`--tools workspace-write\` on one run,
+- Participants use default safe mode (no write tools). Use \`--rw\` / \`--tools workspace-write\` on one run,
   or configure \`--tools workspace-write\` / \`full-auto\`, when a participant should edit files or run commands.
 - One-shot: participants do not remember previous calls; each call re-sends the current session handoff.
 - New participants are addressed with \`@name\` or \`/consensflow:cf @name …\`; no per-participant slash commands are registered.
