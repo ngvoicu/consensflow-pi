@@ -284,7 +284,7 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 
 ## Where config and artifacts live
 
-- **Participants (global, shared across tools):** `~/.consensflow/participants.json` — set up `@zeus` once and use him from any project *and* from the Claude Code sibling (consensflow-cc); both tools read the same roster.
+- **Participants (global, shared across tools):** `~/.consensflow/participants.json` — set up `@zeus` once and use him from any project *and* from the Claude Code sibling (consensflow-cc); both tools read the same roster. If this shared file is missing but an older per-tool roster exists at `~/.consensflow/consensflow-cc/participants.json` or `~/.consensflow/consensflow-pi/participants.json`, ConsensFlow migrates those entries into the shared file once.
 - **Run artifacts (per workspace):** `~/.consensflow/workspaces/<workspace>-<hash>/runs/…` — stored in the home; nothing is ever created inside your project.
 
 ---

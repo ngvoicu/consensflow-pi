@@ -23,7 +23,7 @@ Core direction:
 - `index.ts` — the only TypeScript file and the extension entry (root `index.ts` so pi's extension list shows the bare package name): extension factory (event handlers, `/cf` + per-participant commands, the `cf_*` tools), input routing, `collectHandoff`, and packet wiring. Loaded and transpiled by the host `pi` (no local build).
 - `extensions/consensflow/lib/*.js` — plain JS, the unit-tested core:
   - `presets.js` — preset catalog + `participantFromPreset` (supports `--name`/`--id` rename).
-  - `state.js` — single shared ConsensFlow home (`configHome()` / `configRoot()` = `~/.consensflow`) + `participants.json` + `normalizeParticipant` (validates kind/policies) + workspace artifacts under `workspaces/`.
+  - `state.js` — single shared ConsensFlow home (`configHome()` / `configRoot()` = `~/.consensflow`) + `participants.json` + one-time migration from old per-tool rosters when the shared file is missing + `normalizeParticipant` (validates kind/policies) + workspace artifacts under `workspaces/`.
   - `packets.js` — `createPacket` (conversational, mode-aware, handoff + prompt).
   - `handoff.js` — `serializeTranscript` (root→leaf, compaction-aware, byte-capped) + `custom_message` cross-pollination.
   - `workflows.js` — `effectiveToolsPolicy` (readonly-by-default) + `participantForKind(participant, kind, overridePolicy)` (the per-call `toolsPolicy` override) + `runNamedParticipant`.
