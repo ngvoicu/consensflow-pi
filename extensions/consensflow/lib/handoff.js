@@ -52,6 +52,9 @@ function serializeEntry(entry) {
 export function serializeCustomMessage(entry) {
   if (!entry || typeof entry !== "object") return null;
   const details = entry.details;
+  // Live participant stream crumbs are displayed in the main session for observability, but they
+  // are not durable participant replies. Keep later handoffs focused on the final response.
+  if (details?.streamEvent) return null;
   const participantId = details?.participant?.id;
   if (entry.customType === "consensflow" && participantId) {
     const lines = [];

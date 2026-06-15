@@ -233,7 +233,7 @@ The reply appears inline in Pi. Every run is also saved under the ConsensFlow ho
   transcript.md  # human-readable thinking / tool calls / answer — the durability backstop
 ```
 
-**Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive (via `cf_run_participant`'s `onUpdate`) — foreground-incremental. Every text-CLI run also writes `transcript.md` into the run dir so a killed or backgrounded run isn't lost; on a timeout you get the partial trail under a clear header, never a raw event dump.
+**Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive — direct `@name` / `/consensflow:cf` calls appear as lightweight messages in the main session, and lead-initiated `cf_run_participant` calls stream via `onUpdate`. Every text-CLI run also writes `transcript.md` into the run dir as a durability backstop; on a timeout you get the partial trail under a clear header, never a raw event dump.
 
 After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it. **Per-call write:** add `--rw` / `--tools workspace-write` to `/consensflow:cf`, or pass `cf_run_participant` a `toolsPolicy` of `workspace-write`/`full-auto`, to make only that run write-capable — no second roster entry needed.
 

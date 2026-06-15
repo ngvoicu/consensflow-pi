@@ -521,6 +521,13 @@ test("serializeTranscript surfaces prior ConsensFlow participant exchanges (cros
     { type: "message", id: "0", message: { role: "user", content: "let's design the cache" } },
     {
       type: "custom_message",
+      id: "1-stream",
+      customType: "consensflow",
+      content: "→ read({\"path\":\"cache.ts\"})",
+      details: { streamEvent: true, participant: { id: "iris" } },
+    },
+    {
+      type: "custom_message",
       id: "1",
       customType: "consensflow",
       content: "# @iris\n\nRun: ask-123\nExit: 0\n\nUse a write-through cache.",
@@ -530,8 +537,10 @@ test("serializeTranscript surfaces prior ConsensFlow participant exchanges (cros
   const text = serializeTranscript(branch);
   assert.match(text, /User → @iris: which cache strategy\?/);
   assert.match(text, /@iris replied:\nUse a write-through cache\./);
-  // The run-metadata noise from the rendered message is not used when structured details exist.
+  // The run-metadata noise from the rendered message is not used when structured details exist;
+  // live stream crumbs are display-only and do not cross-pollinate later participant handoffs.
   assert.doesNotMatch(text, /Run: ask-123/);
+  assert.doesNotMatch(text, /cache\.ts/);
 });
 
 test("serializeTranscript keeps cf_run_participant tool results near-whole (lead-initiated cross-pollination)", () => {

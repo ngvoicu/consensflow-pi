@@ -337,6 +337,11 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
     signal,
     timeoutMs: parsed.timeoutMs,
     toolsPolicy: parsed.toolsPolicy,
+    // Direct @mention and /consensflow:cf runs should be visible in the main session too, not
+    // just as a final answer after a long child process. Stream the normalized trail as
+    // lightweight custom messages; handoff serialization ignores these stream crumbs and keeps
+    // only the final participant reply for cross-pollination.
+    onEvent: (event: any) => sendCfStreamEvent(pi, participant, event),
   });
   result.handoffSummary = summarizeHandoff(handoff, includeHandoff);
   // Record the prompt in details so later participants' handoffs can reconstruct this exchange
@@ -633,6 +638,12 @@ function renderRunResult(result: any) {
 
 function sendCfMessage(pi: ExtensionAPI, content: string, details?: any) {
   pi.sendMessage({ customType: EXT, content, display: true, details });
+}
+
+function sendCfStreamEvent(pi: ExtensionAPI, participant: any, event: any) {
+  const line = renderEvent(event);
+  if (!line) return;
+  sendCfMessage(pi, line, { streamEvent: true, participant: { id: participant.id, kind: participant.kind } });
 }
 
 // Single error surface for every entry path (the /consensflow router and the @mention input
