@@ -1,6 +1,6 @@
 # CLAUDE.md — ConsensFlow Pi
 
-Guidance for Claude Code working in this directory. This is the sole ConsensFlow project (the older ACP-based `consensflow-cli/` was removed).
+Guidance for Claude Code working in this directory. This is the sole ConsensFlow project (the older `consensflow-cli/` was removed).
 
 ## What it is
 

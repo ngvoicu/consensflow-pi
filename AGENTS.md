@@ -1,6 +1,6 @@
 # AGENTS.md — ConsensFlow Pi
 
-Pi-native ConsensFlow package — the sole project in this workspace. (The earlier ACP-based `consensflow-cli/` has been removed; do not reintroduce its architecture.)
+Pi-native ConsensFlow package — the sole project in this workspace. (The earlier `consensflow-cli/` has been removed.)
 
 ## What this is
 
@@ -9,9 +9,9 @@ A Pi package containing a TypeScript extension and skill for routing a natural-l
 Core direction:
 
 - The current Pi session is the lead/spec creator/implementer.
-- ConsensFlow is a lightweight prompt router, not a shared room.
+- ConsensFlow is a lightweight prompt router.
 - Named participants are ephemeral one-shot subagent calls (no memory between calls).
-- Each call's packet embeds a serialized, capped handoff of the current session plus the prompt; participants stay isolated one-shot subprocesses — no live/shared transcript, no ACP.
+- Each call's packet embeds a serialized, capped handoff of the current session plus the prompt; participants stay isolated one-shot subprocesses.
 - Participant config is global/user-level and **shared across both host tools** at `~/.consensflow/participants.json` — define a participant once and use it from pi *and* the Claude Code sibling (consensflow-cc). There are no per-tool config roots; run artifacts also live under `~/.consensflow/workspaces/…`.
 - Participants come from curated presets (`extensions/consensflow/lib/presets.js`, renameable via `--name`) or fully custom definitions (`/consensflow:participants add --name … --kind … --model … --tools …`).
 - Pi intentionally matches the Claude Code slash-command surface: only `/consensflow:*` commands are registered. `@mention` works for prompt routing; no unnamespaced shortcut commands or per-participant slash commands.
@@ -46,7 +46,7 @@ There is no local `node_modules` or `dist` — peer deps come from the host `pi`
 
 ## Conventions
 
-- Keep the router lightweight: the handoff is a one-shot serialized snapshot built on-demand from `ctx.sessionManager`, embedded in the packet — never a streamed/shared/live session or an ACP-style shared transcript.
+- Keep the router lightweight: the handoff is a one-shot serialized snapshot built on-demand from `ctx.sessionManager`, embedded in the packet.
 - Build the handoff with a hard byte cap (keep the tail) and **never add a new runtime import of the host `@earendil-works/pi-coding-agent` package** — read the transcript via the `ctx.sessionManager` methods already provided (`getBranch()`, `getLeafId()`).
 - `ctx.sessionManager.getBranch()` returns entries **root→leaf (oldest first) — do not reverse it.** (Verified in the host's `session-manager.js`, which `unshift`es while walking up; the `.d.ts` comment "walk to root, in path order" is misleading.)
 - Cross-pollination: participant replies persist as `custom_message` entries (not normal messages); `serializeTranscript` surfaces ConsensFlow ones so later participants' handoffs include earlier `@participant` exchanges. The triggering prompt is carried in the message `details` because the `@mention` input is "handled" and never stored as a normal message.
@@ -56,7 +56,7 @@ There is no local `node_modules` or `dist` — peer deps come from the host `pi`
 - Participants run with their configured tools. `effectiveToolsPolicy` (workflows.js) treats a missing policy as `readonly` — write access requires an explicit `workspace-write`/`full-auto`. Enforcement is per engine (runners.js): codex `--sandbox read-only` (OS-level), claude `--allowedTools` + `--disallowedTools` deny list, pi `--tools` allowlist, opencode `OPENCODE_PERMISSION={"edit":"deny","bash":"deny"}` env (its defaults are allow). Claude/codex children also get `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` stripped so runs stay on the subscription logins.
 - Consent gate: consulting a participant is free and proactive, but the lead must never apply/keep a participant's response — or a write-capable participant's file edits — without explicit user approval, unless pre-authorized. The gate lives in `cf_run_participant`'s description/promptSnippet and `skills/consensflow/SKILL.md`; keep them in sync when changing it.
 - Image participants (`kind: image`) bypass the CLI runner: handled in `index.ts` (`runImageParticipant`/`generateImageArtifact`), which calls `image.js` with the `openai-codex` token from `ctx.modelRegistry` (a ctx method, not a host import — the no-host-import rule stays intact). They get the prompt only (no packet/handoff), save a PNG under the run dir, and render inline via an image content block. `buildRunnerInvocation` throws on `image` as a loud backstop so it can never silently reach the CLI path.
-- **Streaming observability (primary):** `cf_run_participant` streams normalized thinking / tool-call / answer events into the Pi UI via its `onUpdate` callback (`renderEvent` per event) as the run progresses — **foreground-incremental** (the cc analog is the `--stream` flag). Every text-CLI run also writes a human-readable `transcript.md` (the event trail) into its run dir as a **durability backstop**, with `result.transcriptPath` pointing to it; on timeout/no-answer the surfaced output is the bounded trail under a clear header, never the raw JSONL stream.
+- **Streaming observability (primary):** `cf_run_participant` streams normalized thinking / tool-call / answer events into the Pi UI via its `onUpdate` callback (`renderEvent` per event) as the run progresses — **foreground-incremental** and **non-optional** (the cc analog is the `--stream` flag): there is no flag or agent decision that suppresses it. Every text-CLI run also writes a human-readable `transcript.md` (the event trail) into its run dir as a **durability backstop**, with `result.transcriptPath` pointing to it; on timeout/no-answer the surfaced output is the bounded trail under a clear header, never the raw JSONL stream.
 - **Per-call tools override:** `cf_run_participant` takes an optional `toolsPolicy` (`workspace-write`/`full-auto`; `readonly` remains an internal accepted value) that overrides the stored policy for one run — one roster entry, default safe mode, write made explicit per call; the consent gate is unchanged.
 - Pi participants use `--mode json --no-session --no-extensions`; do not add `--no-skills` by default.
 - Keep command paths real end-to-end; no reachable stubs (tests exercise `lib/*.js`; the `.ts` is validated by the smoke command above).

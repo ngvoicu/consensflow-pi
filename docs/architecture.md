@@ -2,7 +2,7 @@
 
 ConsensFlow Pi is a Pi package for routing one natural-language prompt to one named participant.
 
-It deliberately avoids the old ACP/shared-transcript model and avoids hidden workflow commands such as spec review, implementation review, council, grill, or handoff.
+It deliberately avoids hidden workflow commands such as spec review, implementation review, council, grill, or handoff.
 
 ## Layers
 
@@ -58,7 +58,7 @@ A prompt routes to a participant when it names exactly one — and the `@mention
 Internally, every participant is treated like a subagent:
 
 - isolated child process
-- packet with a one-shot session handoff (snapshot), not a live/shared Pi transcript
+- packet with a one-shot session handoff (snapshot)
 - explicit tool policy (configured; missing policy means default safe mode)
 - no memory between calls
 - artifact output

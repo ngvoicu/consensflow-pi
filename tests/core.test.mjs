@@ -716,6 +716,7 @@ test("docs describe the stream-first observability surface, transcript backstop,
   // Stream-first observability surface — pi streams normalized events via cf_run_participant's onUpdate.
   assert.match(docs, /onUpdate/, "docs mention the pi onUpdate streaming surface");
   assert.match(docs, /foreground/i, "docs note streaming is foreground-incremental");
+  assert.match(docs, /non-optional/i, "docs lock streaming as non-optional");
   // Durability backstop + the new parity-locked event module.
   assert.match(docs, /transcript\.md/, "docs mention the transcript.md backstop");
   assert.match(docs, /transcript-events\.js/, "docs mention the parity-locked event module");
