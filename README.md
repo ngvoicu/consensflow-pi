@@ -151,6 +151,7 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@heimdall` | opencode | `openrouter/google/gemini-3.1-pro-preview` | high |
 | `@nike` | pi | `openrouter/google/gemini-3.5-flash` | low |
 | `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | low |
+| `@prometheus` | pi | `openrouter/z-ai/glm-5.2` | high |
 | `@ares` | pi | `openrouter/x-ai/grok-4.3` | high |
 | `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — |
 | `@selene` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high |

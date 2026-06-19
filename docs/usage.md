@@ -23,7 +23,7 @@ Preset map (each model+effort family on every engine that runs it):
 - **GPT 5.5**: `athena`/`perseus`/`loki` (codex xhigh/high/medium), `iris`/`hermes`/`eos` (pi xhigh/high/medium), `forseti`/`bragi`/`ullr` (opencode xhigh/high/medium).
 - **Deep open-weights**: Kimi K2.7 Code — `luna` (opencode), `daedalus` (pi craftsman preset), `selene` (pi moon-goddess alias; both Pi presets use high thinking).
 - **Fast tier**: `hermod` (Claude Haiku), `nike`/`sif` (Gemini Flash on pi/opencode), `zephyros`/`freya` (DeepSeek Flash on pi/opencode).
-- **Model zoo** (same OpenRouter models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`.
+- **Model zoo** (same OpenRouter models, Greek = pi / Norse = opencode): DeepSeek V4 Pro `hades`/`odin`, Gemini 3.1 Pro `helios`/`heimdall`, Grok 4.3 `ares`/`thor`, Qwen3.7 Max `hephaestus`/`tyr`, Llama 4 Maverick `pan`/`vidar`, Mistral Large `aeolus`/`njord`, MiniMax M3 `metis`/`mimir`, GLM 5.2 `prometheus` (pi only).
 - **Image**: `pygmalion` (kind=image) — generates a picture with gpt-image-2 via your openai-codex login.
 
 Run `/consensflow:presets` for the full list with exact model strings.
