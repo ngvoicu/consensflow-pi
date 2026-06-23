@@ -1,6 +1,6 @@
 {
   "name": "consensflow-pi",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Pi-native one-at-a-time named-agent prompt routing.",
   "type": "module",
