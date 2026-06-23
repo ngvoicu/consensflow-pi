@@ -3,7 +3,7 @@ import path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { serializeTranscript } from "./extensions/consensflow/lib/handoff.js";
-import { decodeChatGptAccountId, generateImage, IMAGE_TRIGGER_DEFAULT, saveImagePng } from "./extensions/consensflow/lib/image.js";
+import { decodeChatGptAccountId, generateImage, imageFileToDataUrl, IMAGE_TRIGGER_DEFAULT, saveImagePng } from "./extensions/consensflow/lib/image.js";
 import { formatPresets, getPreset, listPresetIds, participantFromPreset } from "./extensions/consensflow/lib/presets.js";
 import {
   cfRoot,
@@ -69,13 +69,14 @@ export default async function consensflow(pi: ExtensionAPI) {
       includeHandoff: Type.Optional(Type.Boolean({ description: "Attach the current session transcript as context. Defaults to true." })),
       timeoutMs: Type.Optional(Type.Number({ description: "Optional timeout override" })),
       toolsPolicy: Type.Optional(Type.String({ description: "Per-call write override: 'workspace-write' or 'full-auto'. Omit for default safe mode. Defaults to the participant's stored policy. Write stays gated by the consent rule above." })),
+      images: Type.Optional(Type.Array(Type.String(), { description: "Image-participant only (kind=image): file paths to reference images (.png/.jpg/.jpeg/.webp/.gif) for gpt-image-2 to edit/condition on. Ignored by text participants." })),
     }),
     async execute(_toolCallId, params, signal, onUpdate, ctx) {
       const participant = await getParticipant(ctx.cwd, params.participant);
       if (!participant) throw new Error(`Unknown participant: ${params.participant}`);
       if (participant.kind === "image") {
         onUpdate?.({ content: [{ type: "text", text: `Generating image with @${participant.id} (gpt-image-2)...` }] });
-        const r = await generateImageArtifact(ctx, participant, params.prompt, signal);
+        const r = await generateImageArtifact(ctx, participant, params.prompt, signal, params.images);
         return {
           content: [
             { type: "text", text: imageSummary(participant, r) },
@@ -323,7 +324,7 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
   if (parsed.error) throw new Error(parsed.error);
   const participant = await getParticipant(ctx.cwd, parsed.participant);
   if (!participant) throw new Error(`Unknown participant: @${parsed.participant}`);
-  if (participant.kind === "image") return await runImageParticipant(participant, parsed.prompt, ctx, pi, signal);
+  if (participant.kind === "image") return await runImageParticipant(participant, parsed.prompt, ctx, pi, signal, parsed.images);
   ctx.ui.notify(`Asking @${participant.id}...`, "info");
   const includeHandoff = parsed.includeHandoff ?? true;
   const handoff = includeHandoff ? collectHandoff(ctx) : "";
@@ -354,7 +355,7 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
 // backend (gpt-image-2) over HTTP — reusing the openai-codex login — and returns
 // an image. Handled here, not in runners.js, because it needs ctx.modelRegistry.
 // The image model gets the prompt verbatim (no packet/handoff).
-async function generateImageArtifact(ctx: any, participant: any, prompt: string, signal?: AbortSignal) {
+async function generateImageArtifact(ctx: any, participant: any, prompt: string, signal?: AbortSignal, imagePaths: string[] = []) {
   const token = await ctx?.modelRegistry?.getApiKeyForProvider?.("openai-codex");
   if (!token) {
     throw new Error("No openai-codex login found. Run /login and pick ChatGPT Plus/Pro (Codex) to use image participants.");
@@ -365,22 +366,25 @@ async function generateImageArtifact(ctx: any, participant: any, prompt: string,
   const runDir = path.join(runsRoot(ctx.cwd), runId);
   await fs.mkdir(runDir, { recursive: true });
   const triggerModel = participant.model || IMAGE_TRIGGER_DEFAULT;
-  const image = await generateImage({ token, accountId, prompt, triggerModel, signal });
+  // Optional reference images become input_image parts so gpt-image-2 can edit/condition on them.
+  const images = await Promise.all((imagePaths ?? []).map((p) => imageFileToDataUrl(p)));
+  const image = await generateImage({ token, accountId, prompt, triggerModel, images, signal });
   const savedPath = await saveImagePng(image.base64, runDir, "image.png");
   await fs.writeFile(
     path.join(runDir, "result.json"),
-    `${JSON.stringify({ runId, savedPath, triggerModel, backend: "gpt-image-2", revisedPrompt: image.revisedPrompt, responseId: image.responseId, participant: { id: participant.id, kind: participant.kind } }, null, 2)}\n`,
+    `${JSON.stringify({ runId, savedPath, triggerModel, backend: "gpt-image-2", referenceImages: imagePaths ?? [], revisedPrompt: image.revisedPrompt, responseId: image.responseId, participant: { id: participant.id, kind: participant.kind } }, null, 2)}\n`,
     "utf8",
   );
   await recordLatestRun(ctx.cwd, { runId, runDir, participant, kind: "image" });
-  return { runId, runDir, savedPath, mimeType: "image/png", base64: image.base64, revisedPrompt: image.revisedPrompt };
+  return { runId, runDir, savedPath, mimeType: "image/png", base64: image.base64, revisedPrompt: image.revisedPrompt, referenceImages: imagePaths ?? [] };
 }
 
-function imageSummary(participant: any, r: { savedPath: string; revisedPrompt?: string }) {
+function imageSummary(participant: any, r: { savedPath: string; revisedPrompt?: string; referenceImages?: string[] }) {
   return [
     `# @${participant.id}`,
     "",
     "Generated an image with **gpt-image-2** (via your openai-codex login).",
+    r.referenceImages?.length ? `Reference image(s): ${r.referenceImages.join(", ")}` : undefined,
     r.revisedPrompt ? `Revised prompt: ${r.revisedPrompt}` : undefined,
     `Saved: ${r.savedPath}`,
   ]
@@ -388,9 +392,9 @@ function imageSummary(participant: any, r: { savedPath: string; revisedPrompt?: 
     .join("\n");
 }
 
-async function runImageParticipant(participant: any, prompt: string, ctx: any, pi: ExtensionAPI, signal?: AbortSignal) {
+async function runImageParticipant(participant: any, prompt: string, ctx: any, pi: ExtensionAPI, signal?: AbortSignal, imagePaths: string[] = []) {
   ctx.ui.notify(`Generating image with @${participant.id} (gpt-image-2)...`, "info");
-  const r = await generateImageArtifact(ctx, participant, prompt, signal);
+  const r = await generateImageArtifact(ctx, participant, prompt, signal, imagePaths);
   pi.sendMessage({
     customType: EXT,
     content: [
@@ -418,7 +422,7 @@ function collectHandoff(ctx: any): string {
 }
 
 type ParticipantPrompt =
-  | { participant: string; prompt: string; error?: undefined; context?: string; includeHandoff?: boolean; timeoutMs?: number; toolsPolicy?: string }
+  | { participant: string; prompt: string; error?: undefined; context?: string; includeHandoff?: boolean; timeoutMs?: number; toolsPolicy?: string; images?: string[] }
   | { participant?: undefined; prompt?: undefined; error: string };
 
 // Tokenize a typed line and decide whether it addresses one participant. When the line contains
@@ -440,20 +444,28 @@ function parseRunPrompt(tokens: string[], known: Set<string>): ParticipantPrompt
   if (!prompt || prompt.error) return prompt;
   const toolsPolicy = parsed.flags.rw === true ? "workspace-write" : stringFlag(parsed.flags.tools ?? parsed.flags.toolsPolicy);
   const timeoutMs = numberFlag(parsed.flags["timeout-ms"] ?? parsed.flags.timeoutMs);
+  const images = Array.isArray(parsed.flags.image) ? (parsed.flags.image as string[]) : undefined;
   return {
     ...prompt,
     context: stringFlag(parsed.flags.context),
     includeHandoff: flagBool(parsed.flags, "handoff") ?? true,
     timeoutMs,
     toolsPolicy,
+    images,
   };
 }
 
 function parseRunOptions(tokens: string[]) {
   const positional: string[] = [];
   const flags: Record<string, unknown> = {};
-  const valueFlags = new Set(["tools", "toolsPolicy", "context", "timeout-ms", "timeoutMs"]);
+  const valueFlags = new Set(["tools", "toolsPolicy", "context", "timeout-ms", "timeoutMs", "image"]);
   const booleanFlags = new Set(["rw", "handoff", "no-handoff"]);
+  // Repeatable flags collect into an array: `--image a.png --image b.png` → ["a.png", "b.png"].
+  const multiValueFlags = new Set(["image"]);
+  const setValue = (name: string, value: string) => {
+    if (multiValueFlags.has(name)) ((flags[name] ??= []) as string[]).push(value);
+    else flags[name] = value;
+  };
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
     if (!token.startsWith("--") || token === "--") {
@@ -464,7 +476,7 @@ function parseRunOptions(tokens: string[]) {
     const eq = raw.indexOf("=");
     const name = eq >= 0 ? raw.slice(0, eq) : raw;
     if (eq >= 0) {
-      if (valueFlags.has(name)) flags[name] = raw.slice(eq + 1);
+      if (valueFlags.has(name)) setValue(name, raw.slice(eq + 1));
       else if (booleanFlags.has(name)) flags[name] = raw.slice(eq + 1) !== "false";
       else positional.push(token);
       continue;
@@ -476,7 +488,7 @@ function parseRunOptions(tokens: string[]) {
     if (valueFlags.has(name)) {
       const next = tokens[i + 1];
       if (next === undefined || next.startsWith("--")) throw new Error(`--${name} requires a value`);
-      flags[name] = next;
+      setValue(name, next);
       i += 1;
       continue;
     }

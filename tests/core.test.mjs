@@ -10,7 +10,7 @@ import { buildRunnerInvocation, codexSandbox, effectiveTimeoutMs, normalizeProce
 import { configRoot, getParticipant, loadParticipants, normalizeParticipant, participantsPath, removeParticipant, upsertParticipant } from "../extensions/consensflow/lib/state.js";
 import { effectiveToolsPolicy, participantForKind } from "../extensions/consensflow/lib/workflows.js";
 import { parseOptions, parseParticipantPrompt, resolveInside, slugify, tokenize } from "../extensions/consensflow/lib/utils.js";
-import { buildImageRequestBody, decodeChatGptAccountId, extractImageFromEvents, saveImagePng } from "../extensions/consensflow/lib/image.js";
+import { buildImageRequestBody, decodeChatGptAccountId, extractImageFromEvents, imageFileToDataUrl, saveImagePng } from "../extensions/consensflow/lib/image.js";
 
 async function withTempDir(fn) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "cf-pi-test-"));
@@ -594,6 +594,17 @@ test("image helpers: JWT account id, request body, SSE extraction, PNG save", as
   assert.equal(body.model, "gpt-5.5");
   assert.equal(body.tools[0].type, "image_generation");
   assert.equal(body.input[0].content[0].text, "a red cat");
+  // Without references the content is text-only — regression guard.
+  assert.equal(body.input[0].content.length, 1);
+  assert.equal(body.input[0].content.some((part) => part.type === "input_image"), false);
+
+  // With reference images, each becomes an input_image part (image_url is a plain string), after the text.
+  const refs = ["data:image/png;base64,AAA", "data:image/jpeg;base64,BBB"];
+  const refBody = buildImageRequestBody("blend these", "gpt-5.5", refs);
+  assert.equal(refBody.input[0].content[0].type, "input_text");
+  const imageParts = refBody.input[0].content.filter((part) => part.type === "input_image");
+  assert.deepEqual(imageParts.map((part) => part.image_url), refs);
+  assert.match(refBody.instructions, /reference image/i);
 
   // extractImageFromEvents finds the base64 image + metadata across SSE events.
   const img = extractImageFromEvents([
@@ -611,6 +622,22 @@ test("image helpers: JWT account id, request body, SSE extraction, PNG save", as
     const b64 = Buffer.from("PNGDATA").toString("base64");
     const saved = await saveImagePng(b64, path.join(cwd, "runs", "img1"), "image.png");
     assert.equal((await readFile(saved)).toString(), "PNGDATA");
+  });
+});
+
+test("reference images: imageFileToDataUrl encodes by extension; rejects unknown/missing", async () => {
+  await withTempDir(async (dir) => {
+    const pngPath = path.join(dir, "ref.png");
+    await writeFile(pngPath, Buffer.from("PNGBYTES"));
+    assert.equal(await imageFileToDataUrl(pngPath), `data:image/png;base64,${Buffer.from("PNGBYTES").toString("base64")}`);
+
+    const jpgPath = path.join(dir, "ref.JPG");
+    await writeFile(jpgPath, Buffer.from("JPGBYTES"));
+    assert.match(await imageFileToDataUrl(jpgPath), /^data:image\/jpeg;base64,/);
+
+    await writeFile(path.join(dir, "ref.txt"), "nope");
+    await assert.rejects(() => imageFileToDataUrl(path.join(dir, "ref.txt")), /Unsupported reference image/);
+    await assert.rejects(() => imageFileToDataUrl(path.join(dir, "missing.png")), /ENOENT|no such file/);
   });
 });
 

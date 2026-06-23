@@ -13,7 +13,7 @@ Use participants for all of these, one participant at a time. No preset is intri
 
 - **Advice / second opinion / design critique.** Ask a participant to inspect context, critique a plan, assess a pasted diff, identify risks, or suggest tests.
 - **Doing work / code-writing help.** The same participant can implement, refactor, or run commands when it is write-capable (stored `--tools workspace-write` / `full-auto`, or a per-call `toolsPolicy` override in `cf_run_participant`). Treat it like a temporary helper: after the run, inspect `git status` / `git diff` and relevant tests, then ask the user before keeping or building on the changes unless they pre-authorized it.
-- **Image generation.** `@pygmalion` (or any `kind=image` participant) uses **gpt-image-2** via Pi's `openai-codex` login. It receives the image prompt only — no session handoff — saves `image.png` in the ConsensFlow run dir under `~/.consensflow/workspaces/…`, and Pi shows the generated image inline.
+- **Image generation.** `@pygmalion` (or any `kind=image` participant) uses **gpt-image-2** via Pi's `openai-codex` login. It receives the image prompt only — no session handoff — saves `image.png` in the ConsensFlow run dir under `~/.consensflow/workspaces/…`, and Pi shows the generated image inline. Optionally pass one or more **reference images** with `--image <path>` (repeatable, or the `cf_run_participant` tool's `images` param) so gpt-image-2 edits/conditions on them — supply a file path (.png/.jpg/.jpeg/.webp/.gif).
 
 ## The two rules that matter most
 
@@ -76,7 +76,7 @@ Presets use default safe mode; the same model+effort family exists on every engi
 - **Deep open-weights**: Kimi K2.7 Code — `@luna` (OpenCode), `@daedalus` (Pi craftsman preset), `@selene` (Pi moon-goddess alias; both Pi presets use high thinking).
 - **Fast/cheap tier** (quick gut-checks): `@hermod` (Claude Haiku 4.5), `@nike`/`@sif` (Gemini 3.5 Flash on Pi/OpenCode), `@zephyros`/`@freya` (DeepSeek V4 Flash on Pi/OpenCode).
 - **Model zoo** (same OpenRouter models on two engines; Greek = pi, Norse = opencode): DeepSeek V4 Pro `@hades`/`@odin`, Gemini 3.1 Pro `@helios`/`@heimdall`, Grok 4.3 `@ares`/`@thor`, Qwen3.7 Max `@hephaestus`/`@tyr`, Llama 4 Maverick `@pan`/`@vidar`, Mistral Large `@aeolus`/`@njord`, MiniMax M3 `@metis`/`@mimir`, GLM 5.2 `@prometheus` (pi only).
-- **Image**: `@pygmalion` (kind=image) generates a picture with gpt-image-2 via your existing openai-codex login — prompt-only (no handoff), saved to the workspace's run dir under `~/.consensflow/workspaces/…` and shown inline.
+- **Image**: `@pygmalion` (kind=image) generates a picture with gpt-image-2 via your existing openai-codex login — prompt-only (no handoff), optional `--image <path>` reference(s), saved to the workspace's run dir under `~/.consensflow/workspaces/…` and shown inline.
 
 Run `/consensflow:presets` for the full list. Model and effort strings pass through to the engine verbatim, so any identifier the engine accepts works.
 

@@ -627,7 +627,7 @@ export const PARTICIPANT_PRESETS = [
     id: "pygmalion",
     name: "Pygmalion",
     label: "Image — gpt-image-2 (via Codex login)",
-    description: "Generates images with gpt-image-2 through your existing openai-codex login. The model field is only the trigger model; the image backend is always gpt-image-2.",
+    description: "Generates images with gpt-image-2 through your existing openai-codex login. Accepts optional reference images (`--image <path>`, repeatable) to edit/condition on. The model field is only the trigger model; the image backend is always gpt-image-2.",
     kind: "image",
     model: "gpt-5.5",
     toolsPolicy: "readonly",
