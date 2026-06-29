@@ -533,6 +533,21 @@ test("serializeTranscript caps bytes keeping the tail, and handles empty input",
   assert.equal(serializeTranscript(null), "");
 });
 
+test("serializeTranscript honors the CONSENSFLOW_HANDOFF_MAX_BYTES env budget when no maxBytes is passed", () => {
+  // ~25 KB of entries: under the 48 KB default (no truncation), so the marker proves the env took effect.
+  const long = Array.from({ length: 50 }, (_, i) => ({ type: "message", id: String(i), message: { role: "user", content: "x".repeat(500) } }));
+  const prev = process.env.CONSENSFLOW_HANDOFF_MAX_BYTES;
+  try {
+    process.env.CONSENSFLOW_HANDOFF_MAX_BYTES = "2000";
+    const text = serializeTranscript(long); // no options -> env budget applies
+    assert.ok(Buffer.byteLength(text, "utf8") <= 2000);
+    assert.match(text, /\[earlier handoff truncated\]/);
+  } finally {
+    if (prev === undefined) delete process.env.CONSENSFLOW_HANDOFF_MAX_BYTES;
+    else process.env.CONSENSFLOW_HANDOFF_MAX_BYTES = prev;
+  }
+});
+
 test("serializeTranscript surfaces prior ConsensFlow participant exchanges (cross-pollination)", () => {
   const branch = [
     { type: "message", id: "0", message: { role: "user", content: "let's design the cache" } },

@@ -1,16 +1,30 @@
-const DEFAULT_MAX_BYTES = 120 * 1024;
+// Handoff size is bounded so a long session's transcript can't bloat a participant packet to where
+// its model stops converging (a ~120 KB handoff made glm-5.2 at thinking=high stall instead of
+// answering). capTail keeps the most recent tail, so a smaller budget preserves recent context and
+// drops the oldest. Tunable via CONSENSFLOW_HANDOFF_MAX_BYTES without a reinstall.
+const DEFAULT_MAX_BYTES = 48 * 1024;
 const TOOL_RESULT_MAX_CHARS = 1500;
 // Lead-initiated consultations (cf_run_participant) live only as tool results — there is no
-// custom_message for them. Keep them near-whole so they cross-pollinate like @mention replies.
-const CF_TOOL_RESULT_MAX_CHARS = 20000;
+// custom_message for them. Keep them generous so they cross-pollinate like @mention replies — but
+// bounded to a fraction of the default budget so one consultation can't crowd out the rest of the
+// recent conversation. Tunable via CONSENSFLOW_HANDOFF_CF_RESULT_MAX_CHARS.
+const DEFAULT_CF_TOOL_RESULT_MAX_CHARS = 16000;
 const TOOL_ARGS_MAX_CHARS = 200;
+
+// Read a positive integer from an env var, falling back when unset/blank/non-numeric.
+function envPositiveInt(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
 
 // Serialize the active session branch (as returned by sessionManager.getBranch(), which is ordered
 // root -> leaf / chronological) into readable text for a participant handoff. Honors the latest
 // compaction (drops the messages it summarized), flattens AgentMessage content, and caps the total
 // size keeping the most recent (tail) end.
 export function serializeTranscript(branch, options = {}) {
-  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
+  const maxBytes = options.maxBytes ?? envPositiveInt("CONSENSFLOW_HANDOFF_MAX_BYTES", DEFAULT_MAX_BYTES);
   const entries = Array.isArray(branch) ? branch : [];
   if (entries.length === 0) return "";
 
@@ -80,7 +94,9 @@ export function serializeMessage(message) {
       return text ? `Lead:\n${text}` : null;
     }
     case "toolResult": {
-      const maxChars = message.toolName === "cf_run_participant" ? CF_TOOL_RESULT_MAX_CHARS : TOOL_RESULT_MAX_CHARS;
+      const maxChars = message.toolName === "cf_run_participant"
+        ? envPositiveInt("CONSENSFLOW_HANDOFF_CF_RESULT_MAX_CHARS", DEFAULT_CF_TOOL_RESULT_MAX_CHARS)
+        : TOOL_RESULT_MAX_CHARS;
       const body = truncate(flattenContent(message.content), maxChars);
       const label = message.toolName ? ` ${message.toolName}` : "";
       return body ? `Tool result${label}${message.isError ? " (error)" : ""}:\n${body}` : null;
