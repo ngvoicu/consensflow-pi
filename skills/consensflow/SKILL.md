@@ -5,14 +5,14 @@ description: Use ConsensFlow inside Pi to consult one named participant (an exte
 
 # ConsensFlow
 
-ConsensFlow lets the lead (this Pi session) consult one named participant at a time. A participant is an external coding-agent CLI (claude / codex / opencode / pi) run as an isolated one-shot subprocess: it receives a handoff of the current session plus a prompt, answers once, and does not persist between calls. Talking to a participant is like phoning an advisor/helper — and, when explicitly made write-capable, briefly handing over a task. The lead stays the decision-maker and ConsensFlow never accepts or keeps participant work on its own.
+ConsensFlow lets the lead (this Pi session) consult one named participant at a time. A participant is an external coding-agent CLI (claude / codex / opencode / pi) run as an isolated one-shot subprocess: it receives a handoff of the current session plus a prompt, answers once, and does not persist between calls. Each participant runs as a standard read-write CLI call — exactly like running claude/codex/pi/opencode yourself: by default it can read, edit files, and run commands inside the project workspace. Talking to a participant is like phoning an advisor/helper, and briefly handing over a task. The lead stays the decision-maker and ConsensFlow never accepts or keeps participant work on its own.
 
 ## What participants can do
 
-Use participants for all of these, one participant at a time. No preset is intrinsically review-only; the same participant can advise in safe mode or do workspace work when made write-capable:
+Use participants for all of these, one participant at a time. No preset is intrinsically review-only; the same participant can advise or do workspace work — by default it can read, edit files, and run commands in the workspace:
 
 - **Advice / second opinion / design critique.** Ask a participant to inspect context, critique a plan, assess a pasted diff, identify risks, or suggest tests.
-- **Doing work / code-writing help.** The same participant can implement, refactor, or run commands when it is write-capable (stored `--tools workspace-write` / `full-auto`, or a per-call `toolsPolicy` override in `cf_run_participant`). Treat it like a temporary helper: after the run, inspect `git status` / `git diff` and relevant tests, then ask the user before keeping or building on the changes unless they pre-authorized it.
+- **Doing work / code-writing help.** The same participant can implement, refactor, or run commands by default — read-write in the workspace, like any normal CLI run. Treat it like a temporary helper: after the run, inspect `git status` / `git diff` and relevant tests, then ask the user before keeping or building on the changes unless they pre-authorized it.
 - **Image generation.** `@pygmalion` (or any `kind=image` participant) uses **gpt-image-2** via Pi's `openai-codex` login. It receives the image prompt only — no session handoff — saves `image.png` in the ConsensFlow run dir under `~/.consensflow/workspaces/…`, and Pi shows the generated image inline. Optionally pass one or more **reference images** with `--image <path>` (repeatable, or the `cf_run_participant` tool's `images` param) so gpt-image-2 edits/conditions on them — supply a file path (.png/.jpg/.jpeg/.webp/.gif).
 
 ## The two rules that matter most
@@ -31,7 +31,7 @@ The lead may, and should, reach for a participant on its own initiative, with NO
 
 ### 2. Acting on the output is GATED — never without asking
 
-The lead MUST NOT apply, merge, commit, adopt, integrate, or otherwise act on a participant's response — and MUST NOT keep or extend any files a write-capable participant edited — without first surfacing it to the user and getting explicit approval. This is a hard rule, not a preference.
+The lead MUST NOT apply, merge, commit, adopt, integrate, or otherwise act on a participant's response — and MUST NOT keep or extend any files a participant edited — without first surfacing it to the user and getting explicit approval. This is a hard rule, not a preference.
 
 Before acting, the lead MUST present:
 
@@ -43,7 +43,7 @@ Then wait for the user to approve.
 This gate covers BOTH cases equally:
 
 - **(a) Advice in a text response.** Do not implement, refactor toward, or commit to a participant's suggestion until the user approves it.
-- **(b) Real changes by a write-capable participant.** A `workspace-write` / `full-auto` participant may have edited files or run commands in the workspace. Do not treat that work as accepted: surface what changed (summary + recommendation) and get approval before keeping, building on, or committing it. If the user rejects it, revert it.
+- **(b) Real changes a participant made.** A participant may have edited files or run commands in the workspace — it runs read-write by default. Do not treat that work as accepted: surface what changed (summary + recommendation) and get approval before keeping, building on, or committing it. If the user rejects it, revert it.
 
 **The only exception:** the user has already explicitly told the lead to proceed — e.g. "get Zeus's take and apply what makes sense," or "run the builder and commit it." Pre-authorization scoped to that request stands in for the approval; do not re-ask. Absent such an instruction, never act on a participant's output on your own.
 
@@ -64,11 +64,11 @@ Participants are configured in the shared roster `~/.consensflow/participants.js
 /consensflow:participants add daedalus          # Pi-backed Kimi K2.7 Code → @daedalus
 /consensflow:participants add all               # add every preset
 /consensflow:participants add zeus --name Deepreview    # preset backend, renamed → @deepreview
-/consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high \
-    --tools workspace-write                     # fully custom, write-capable by default
+/consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high
+                                                # fully custom; read-write (workspace-write) by default
 ```
 
-Presets use default safe mode; the same model+effort family exists on every engine that runs it:
+Presets run read-write by default (`workspace-write`); the same model+effort family exists on every engine that runs it:
 
 - **Fable 5** (Anthropic's top model — use for the questions that really matter): `@calliope`/`@clio`/`@euterpe`/`@thalia` (Claude Code max/xhigh/high/medium), `@orpheus`/`@linus`/`@erato` (Pi xhigh/high/medium, Anthropic auth), `@saga`/`@gunnlod`/`@kvasir` (OpenCode xhigh/high/medium via OpenRouter).
 - **Opus 4.8**: `@zeus`/`@apollo`/`@artemis` (Claude Code max/xhigh/medium), `@kronos`/`@atlas` (Pi xhigh/medium, Anthropic auth), `@baldr`/`@vali` (OpenCode xhigh/medium via OpenRouter; xhigh is the ceiling outside claude-code).
@@ -105,7 +105,7 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 /consensflow:participants [list|presets|add|show|remove|add <…>]
 
 @name <prompt>                                            # ask — mention anywhere in the line
-/consensflow:cf @name <prompt> [--rw|--tools workspace-write|full-auto]  # explicit router, optional per-call write
+/consensflow:cf @name <prompt> [--tools full-auto]      # explicit router; read-write by default, --tools full-auto to escalate
 ```
 
 ## Tools available to the lead
@@ -120,19 +120,18 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 - `context` — optional focused brief added on top of the automatic session handoff.
 - `includeHandoff` — defaults to true; set false only when the participant should not see the current session snapshot.
 - `timeoutMs` — optional timeout override.
-- `toolsPolicy` — optional per-call write override: `workspace-write` or `full-auto`. Omit it for default safe mode (no write tools).
+- `toolsPolicy` — optional per-call tools override: `workspace-write` (the default — confined to the project workspace) or `full-auto` (escalation that bypasses the engine's sandbox/approval checks). Omit it for the default `workspace-write`.
 
-## Safe-mode vs write-capable participants
+## Tools policy: workspace-write (default) vs full-auto
 
-- **Default and presets:** safe mode (no write tools). They are not review-only; they can plan, critique, explain, and propose code, but they cannot edit files or run commands until made write-capable.
-- **Stored write-capable participant:** create/update with `--tools workspace-write` (or `full-auto`) when the participant is meant to edit by default.
-- **Per-call write access from the lead:** pass `toolsPolicy: "workspace-write"` (or `"full-auto"`) to `cf_run_participant`, or use `/consensflow:cf @name <prompt> --rw` / `--tools workspace-write`, for one run only. This keeps one roster entry and makes the escalation explicit.
-- **After any write-capable run:** inspect what changed yourself (`git status`, `git diff`, relevant tests as needed), summarize what the participant changed, give your recommendation, and wait for user approval before keeping/building on/committing the changes unless the user pre-authorized that exact action.
+- **Default and presets:** `workspace-write` — read-write, confined to the project workspace, exactly like running the CLI yourself. They can plan, critique, explain, propose code, **and** edit files / run commands.
+- **`full-auto` is the only escalation:** create/update a participant with `--tools full-auto`, or pass `toolsPolicy: "full-auto"` / `/consensflow:cf @name <prompt> --tools full-auto` for one run, when the participant should bypass the engine's sandbox/approval checks. `--rw` is still accepted but is now redundant — it just equals the default `workspace-write`.
+- **After any run:** inspect what changed yourself (`git status`, `git diff`, relevant tests as needed) — consulting is no longer sandboxed, so a consult can modify files. Summarize what the participant changed, give your recommendation, and wait for user approval before keeping/building on/committing the changes unless the user pre-authorized that exact action.
 
 ## Invariants
 
 - **One at a time.** Send to exactly one participant per call. Multiple leading `@mentions` are rejected; never fan out to several participants automatically. If the user names several, ask which one first, or ask one and wait for its answer before asking the next.
-- **Safe by default, not review-only.** A participant runs without write tools unless it was explicitly configured with `--tools workspace-write` or `full-auto`, or that call passes `--rw` / `toolsPolicy: "workspace-write"`.
+- **Read-write by default.** A participant runs `workspace-write` (read, edit files, run commands within the project workspace) unless escalated to `full-auto` via `--tools full-auto` or `toolsPolicy: "full-auto"`. Consulting is not sandboxed: a consult can modify files, so inspect `git status` / `git diff` after a run.
 - **One-shot, no memory.** Each call is fresh. Continuity comes only from the handoff (re-sent each time), which already includes earlier `@participant` replies — so a later participant can build on an earlier one (cross-pollination). For a genuinely *independent* opinion, ask that participant **first**, before others have replied — otherwise its handoff carries the prior answers and colors it.
 - **Foreground streaming is non-optional.** Every participant run streams its normalized thinking / tool-call / answer events into the Pi UI as it goes (via `cf_run_participant`'s `onUpdate`); this is structural — there is no flag or agent decision that can suppress it.
 - **The lead is always the decision-maker.** ConsensFlow routes a prompt and returns an answer; it never implements anything on its own. Acting on any answer goes through the gate above.

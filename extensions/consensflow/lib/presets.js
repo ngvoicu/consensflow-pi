@@ -14,7 +14,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-fable-5",
     effort: "max",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -26,7 +26,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-fable-5",
     effort: "xhigh",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -38,7 +38,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-fable-5",
     effort: "high",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -50,7 +50,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-fable-5",
     effort: "medium",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
 
@@ -64,7 +64,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-opus-4-8",
     effort: "max",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -76,7 +76,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-opus-4-8",
     effort: "xhigh",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -88,7 +88,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-opus-4-8",
     effort: "medium",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -100,7 +100,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "codex",
     model: "gpt-5.5",
     effort: "xhigh",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -112,7 +112,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "codex",
     model: "gpt-5.5",
     effort: "high",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -125,7 +125,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openai-codex/gpt-5.5",
     thinking: "xhigh",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -138,7 +138,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openai-codex/gpt-5.5",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -151,7 +151,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openai-codex/gpt-5.5",
     thinking: "medium",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -162,7 +162,7 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed Kimi K2.7 Code participant — Moonshot's coding-first model (OpenRouter defines no effort variants for it).",
     kind: "opencode",
     model: "openrouter/moonshotai/kimi-k2.7-code",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
 
@@ -178,7 +178,7 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-fable-5",
     thinking: "xhigh",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -191,7 +191,7 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-fable-5",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -204,7 +204,7 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-fable-5",
     thinking: "medium",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -216,7 +216,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-fable-5",
     effort: "xhigh",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -228,7 +228,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-fable-5",
     effort: "high",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -240,7 +240,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-fable-5",
     effort: "medium",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   // Opus 4.8 on pi (anthropic provider; pi's thinking ceiling is xhigh, no "max").
@@ -254,7 +254,7 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-opus-4-8",
     thinking: "xhigh",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -267,7 +267,7 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-opus-4-8",
     thinking: "medium",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   // Opus 4.8 on OpenCode (via OpenRouter; note the dotted 4.8 id on OpenRouter).
@@ -281,7 +281,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-opus-4.8",
     effort: "xhigh",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -293,7 +293,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-opus-4.8",
     effort: "medium",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   // GPT 5.5 on OpenCode (via OpenRouter).
@@ -306,7 +306,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/openai/gpt-5.5",
     effort: "xhigh",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -318,7 +318,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/openai/gpt-5.5",
     effort: "high",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -330,7 +330,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/openai/gpt-5.5",
     effort: "medium",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
 
@@ -344,7 +344,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-haiku-4-5",
     effort: "low",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -356,7 +356,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "codex",
     model: "gpt-5.5",
     effort: "medium",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -369,7 +369,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/google/gemini-3.5-flash",
     thinking: "low",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -380,7 +380,7 @@ export const PARTICIPANT_PRESETS = [
     description: "Cheap, fast OpenCode-backed DeepSeek V4 Flash (via OpenRouter).",
     kind: "opencode",
     model: "openrouter/deepseek/deepseek-v4-flash",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -393,7 +393,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/deepseek/deepseek-v4-flash",
     thinking: "low",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -405,7 +405,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/google/gemini-3.5-flash",
     effort: "low",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
 
@@ -420,7 +420,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/deepseek/deepseek-v4-pro",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -433,7 +433,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/google/gemini-3.1-pro-preview",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -446,7 +446,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/x-ai/grok-4.3",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -459,7 +459,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/qwen/qwen3.7-max",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -472,7 +472,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/meta-llama/llama-4-maverick",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -485,7 +485,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/mistralai/mistral-large-2512",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -498,7 +498,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/minimax/minimax-m3",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -511,7 +511,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/z-ai/glm-5.2",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -524,7 +524,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/moonshotai/kimi-k2.7-code",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -537,7 +537,7 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/moonshotai/kimi-k2.7-code",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
 
@@ -550,7 +550,7 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed DeepSeek V4 Pro participant (via OpenRouter).",
     kind: "opencode",
     model: "openrouter/deepseek/deepseek-v4-pro",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -562,7 +562,7 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/google/gemini-3.1-pro-preview",
     effort: "high",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -573,7 +573,7 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed xAI Grok 4.3 participant (via OpenRouter).",
     kind: "opencode",
     model: "openrouter/x-ai/grok-4.3",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -584,7 +584,7 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed Qwen3.7 Max participant (via OpenRouter).",
     kind: "opencode",
     model: "openrouter/qwen/qwen3.7-max",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -595,7 +595,7 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed Meta Llama 4 Maverick participant (via OpenRouter).",
     kind: "opencode",
     model: "openrouter/meta-llama/llama-4-maverick",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -606,7 +606,7 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed Mistral Large participant (via OpenRouter); sea/wind god for 'mistral'.",
     kind: "opencode",
     model: "openrouter/mistralai/mistral-large-2512",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
   {
@@ -617,7 +617,7 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed MiniMax M3 participant (via OpenRouter); god of wisdom for 'minimax'.",
     kind: "opencode",
     model: "openrouter/minimax/minimax-m3",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
 
@@ -630,7 +630,7 @@ export const PARTICIPANT_PRESETS = [
     description: "Generates images with gpt-image-2 through your existing openai-codex login. Accepts optional reference images (`--image <path>`, repeatable) to edit/condition on. The model field is only the trigger model; the image backend is always gpt-image-2.",
     kind: "image",
     model: "gpt-5.5",
-    toolsPolicy: "readonly",
+    toolsPolicy: "workspace-write",
     timeoutMs: T,
   },
 ];

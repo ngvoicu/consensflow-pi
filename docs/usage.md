@@ -13,7 +13,7 @@ Participants are stored in the shared roster `~/.consensflow/participants.json`,
 /consensflow:participants add zeus --name Deepreview   # preset backend, custom name (-> @deepreview)
 /consensflow:participants add all                      # every preset
 /consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high \
-    --tools workspace-write                           # fully custom, write-capable
+    --tools full-auto                                 # fully custom, sandbox-bypassing escalation
 ```
 
 Preset map (each model+effort family on every engine that runs it):
@@ -28,7 +28,7 @@ Preset map (each model+effort family on every engine that runs it):
 
 Run `/consensflow:presets` for the full list with exact model strings.
 
-Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--tools`, `--skills`, `--agent`, `--maxTurns`. Participants use default safe mode (no write tools) unless you pass `--tools workspace-write` or `full-auto` (then they can edit and run).
+Add options — preset path: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`. Custom path also accepts `--kind`, `--model`, `--provider`, `--effort`/`--thinking`, `--tools`, `--skills`, `--agent`, `--maxTurns`. Participants run as standard read-write CLI calls — exactly like running the agent yourself — so by default they can read, edit files, and run commands. The default tools policy is `workspace-write` (confined to the project workspace); `--rw` is accepted but redundant since it just equals that default. The only explicit escalation is `--tools full-auto`, which bypasses the engine's sandbox/approval checks.
 
 ## Ask directly
 
@@ -37,8 +37,8 @@ Use a bare mention or the Claude Code-style `/consensflow:cf` router. Pi intenti
 ```text
 @zeus What do you think about this approach?
 /consensflow:cf @athena Review the auth flow in src/login.ts and tell me only blockers.
-/consensflow:cf @builder Make the minimal fix --rw
-/consensflow:cf @builder Make the minimal fix --tools workspace-write
+/consensflow:cf @builder Make the minimal fix                      # write-capable by default (workspace-write)
+/consensflow:cf @builder Make the minimal fix --tools full-auto    # escalate past the sandbox/approval checks
 ```
 
 ## Ask for questions

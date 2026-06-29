@@ -20,7 +20,7 @@ The whole idea in five bullets:
 
 - **Participant** = a named *(agent + model)* combo. Configure once, reuse from any project.
 - **One at a time.** `@zeus @athena …` is rejected — ask one, read, then ask the next.
-- **Safe by default.** A participant starts in safe mode (no write tools), but it is not review-only; use `--rw` or `--tools workspace-write` when you want that call to edit files or run commands.
+- **Read-write by default.** A participant runs like a standard CLI call — it can read, edit files, and run commands, confined to the project workspace (`workspace-write`). `--rw` is accepted but redundant (it just equals the default); `--tools full-auto` is the only escalation, bypassing the engine's sandbox/approval checks.
 - **One-shot, but context-aware.** Each call is fresh (no memory of past calls), yet it always receives the current session handoff — *including earlier participants' answers* — so the 2nd agent you ask can build on the 1st.
 - **The lead can ask too — and asks before applying.** Pi will consult a participant on its own initiative when a second opinion would help, then report back and get your go-ahead before applying anything — unless you pre-authorized it (e.g. "get Zeus's take and apply what makes sense").
 
@@ -37,12 +37,12 @@ ConsensFlow sees exactly one @mention  →  intercepts the message
    ▼
 It builds a "packet" for @zeus:
    • who @zeus is        (claude-code · claude-opus-4-8 · max)
-   • mode line           (safe mode — or write mode if you made it write-capable)
+   • tools line          (workspace-write by default — or full-auto if you escalated)
    • handoff             (a snapshot of THIS session + earlier @participant replies)
    • your question
    ▼
 Runs @zeus as an isolated, one-shot subprocess:
-   claude -p … --model claude-opus-4-8 --effort max   (default safe mode)
+   claude -p … --model claude-opus-4-8 --effort max   (workspace-write by default)
    no memory of past calls, no live access to your session — just the packet
    ▼
 Saves everything as an artifact:
@@ -171,7 +171,7 @@ Why some cells differ: `max` exists only on claude-code — pi's thinking scale 
 
 Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
-Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets use default safe mode (no write tools); add `--rw` for one write-capable run, or create/update a participant with `--tools workspace-write` if it should write by default.
+Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets run read-write by default (`workspace-write`, confined to the project workspace); `--rw` is redundant with that default. Add `--tools full-auto` for one run that bypasses the engine's sandbox/approval checks.
 
 Add one, all, or a renamed copy:
 
@@ -193,12 +193,12 @@ The popular models already ship as presets (the tables above), so usually you ju
 # Any OpenRouter model via Pi (reasoning via --thinking off | minimal | low | medium | high | xhigh)
 /consensflow:participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
 
-# A participant configured to write by default (OpenCode; effort maps to --variant)
+# A participant pinned to full-auto (OpenCode; effort maps to --variant)
 /consensflow:participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.7-code \
-    --effort max --tools workspace-write
+    --effort max --tools full-auto
 ```
 
-> **Default vs write.** By default a participant runs without write tools, but it can still plan, critique, explain, or propose code. To let it actually edit files and run commands, pass `--tools workspace-write` (or `full-auto`) when creating it, or use `--rw` on a single run — write access is never implicit.
+> **Default vs full-auto.** By default a participant runs read-write, confined to the project workspace (`workspace-write`) — exactly like running the CLI yourself: it can read, edit files, and run commands. The only escalation is `--tools full-auto` (which bypasses the engine's sandbox/approval checks); `--rw` is accepted but redundant with the default.
 
 ### Step 3 — Ask a participant
 
@@ -236,7 +236,7 @@ The reply appears inline in Pi. Every run is also saved under the ConsensFlow ho
 
 **Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive — direct `@name` / `/consensflow:cf` calls appear as lightweight messages in the main session, and lead-initiated `cf_run_participant` calls stream via `onUpdate`. Every text-CLI run also writes `transcript.md` into the run dir as a durability backstop; on a timeout you get the partial trail under a clear header, never a raw event dump.
 
-After a write-capable run, review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping it. **Per-call write:** add `--rw` / `--tools workspace-write` to `/consensflow:cf`, or pass `cf_run_participant` a `toolsPolicy` of `workspace-write`/`full-auto`, to make only that run write-capable — no second roster entry needed.
+A consult can modify files, so after a run review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping or building on it. **Per-call escalation:** pass `--tools full-auto` to `/consensflow:cf`, or give `cf_run_participant` a `toolsPolicy` of `full-auto`, to let only that run bypass the engine's sandbox/approval checks — no second roster entry needed.
 
 Then you, the lead, decide: implement all of it, some of it, or none.
 
@@ -251,8 +251,8 @@ Your live Pi session
    │  serialized at call time: "User: … / Lead: …" turns, tool calls noted,
    │  thinking redacted, earlier @participant replies kept near-whole
    ▼
-capped at 120 KB (~30k tokens) — keeps the MOST RECENT tail,
-older history drops off behind a truncation marker
+capped at 48 KB by default (tunable via CONSENSFLOW_HANDOFF_MAX_BYTES) —
+keeps the MOST RECENT tail, older history drops off behind a truncation marker
    ▼
 embedded in the packet, between the mode line and your question
 ```
@@ -260,7 +260,7 @@ embedded in the packet, between the mode line and your question
 What that means in practice:
 
 - **It's a rendering, not the raw context.** The participant gets readable conversation text, never your model's actual context window — so a 1M-token lead session can never overflow a 200k participant.
-- **Short and medium sessions hand off essentially everything.** Only when the serialized text outgrows 120 KB does the oldest part fall away; a very long session hands off just the recent stretch.
+- **Short and medium sessions hand off essentially everything.** Only when the serialized text outgrows the 48 KB cap (tunable via `CONSENSFLOW_HANDOFF_MAX_BYTES`) does the oldest part fall away; a very long session hands off just the recent stretch.
 - **You can see what rode along.** A clean run shows just the answer; a run with no session history warns `Handoff: empty`. `packet.md` in the run dir is byte-for-byte what the participant received.
 - **Cross-pollination is deliberate.** Earlier participants' answers are kept near-whole in the handoff, so `@zeus Do you agree with Athena?` works. For a genuinely independent opinion, ask that participant first.
 - **When old context matters, restate it.** If a decision from early in a long session is the point of your question, put it (or the relevant diff) in the prompt or the lead's `context` brief — don't assume it's still inside the tail.
@@ -296,8 +296,8 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 /consensflow:participants [list|presets|add|show|remove|add <…>]
 
 @name <prompt>                   # ask — mention anywhere in the line
-/consensflow:cf @name <prompt> [--rw | --tools workspace-write]  # explicit router, optional per-call write
-/consensflow:cf ask @name <prompt> [--rw | --tools workspace-write|full-auto]
+/consensflow:cf @name <prompt> [--tools full-auto]  # explicit router; read-write by default, full-auto to escalate
+/consensflow:cf ask @name <prompt> [--tools full-auto]
 ```
 
 Preset add flags: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`.
@@ -308,8 +308,8 @@ Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thin
 ## Good to know
 
 - **One-shot:** participants don't remember previous calls. Continuity comes from the handoff (re-sent each time), which now includes earlier `@participant` answers — so a later participant sees an earlier one's reply. Great for debate; if you want a genuinely *independent* opinion, ask that participant **first**, before others have replied.
-- **Isolated & safe:** each participant runs in its own one-shot subprocess, started in your workspace; a `--cwd` that escapes it is rejected before launch (realpath-checked). Isolation comes from each engine's tool policy — a true OS sandbox only for Codex — so treat the default safe mode as policy enforcement, not a hard sandbox. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself. Default mode is enforced with each engine's own mechanism: an OS no-write sandbox for Codex, allow+deny tool lists for Claude Code, a limited tool allowlist for Pi, and a deny-edit/bash permission override (`OPENCODE_PERMISSION`) for OpenCode.
-- **You're always the lead.** ConsensFlow routes your question and shows you the answer — it never implements or keeps anything on its own. The lead consults freely, but summarizes a participant's response (or a write-capable participant's file edits) and asks before applying it, unless you've already told it to proceed.
+- **Isolated, but read-write:** each participant runs in its own one-shot subprocess, started in your workspace; a `--cwd` that escapes it is rejected before launch (realpath-checked). By default it runs read-write, confined to that workspace (`workspace-write`) — exactly like running the CLI yourself, so a consult can read, edit files, and run commands. Treat it as a standard CLI call, not a hard sandbox: `--tools full-auto` removes even the workspace confinement and the engine's approval checks. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself.
+- **You're always the lead.** ConsensFlow routes your question and shows you the answer — it never implements or keeps anything on its own. The lead consults freely, but summarizes a participant's response (or any file edits it made) and asks before keeping or building on it, unless you've already told it to proceed.
 
 ---
 

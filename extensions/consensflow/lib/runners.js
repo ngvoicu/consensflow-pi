@@ -10,29 +10,23 @@ import { adaptLine, pushEvents, renderTrail, surfaceOutput, OPENCODE_NO_ANSWER }
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_CAPTURE_BYTES = 2 * 1024 * 1024;
 
-export function toolsForPi(policy) {
-  if (policy === "readonly") return "read,grep,find,ls";
+export function toolsForPi() {
+  // Pi has no read-only bash sandbox (codex does), so a "readonly" tier could only drop bash — and
+  // without bash, pi models lose the iterative test/grep rhythm they need to converge on a review
+  // (they run away "thinking" and never answer). Pi therefore always runs with its full toolset,
+  // like a normal pi session. The tools policy still drives the packet's intent line (read-only vs
+  // read-write); it just no longer mechanically gates pi's tools.
   return "read,grep,find,ls,bash,edit,write";
 }
 
-export function claudeAllowedTools(policy) {
-  if (policy === "readonly") return "Read,Grep,Glob";
+export function claudeAllowedTools() {
   return "Read,Grep,Glob,Edit,Write,Bash";
 }
 
-// --allowedTools only pre-approves; it does not block tools the user's own settings allow.
-// Readonly must also deny, or a broad user-level Bash allowlist leaks write capability in.
-export const CLAUDE_READONLY_DISALLOWED = "Bash,Edit,MultiEdit,NotebookEdit,Write";
-
-// Permission overlay for readonly opencode runs: opencode defaults to edit/bash "allow", so
-// without this a "read-only" participant could edit files. Denying `edit` covers the
-// write/edit/patch tools; read/grep/glob stay available.
-export const OPENCODE_READONLY_PERMISSION = JSON.stringify({ edit: "deny", bash: "deny" });
-
 export function codexSandbox(policy) {
-  if (policy === "readonly") return "read-only";
-  if (policy === "workspace-write") return "workspace-write";
-  return "danger-full-access";
+  // No read-only tier: participants run as standard read-write CLI calls. full-auto is the only
+  // explicit escalation (codex's danger-full-access bypasses the workspace sandbox).
+  return policy === "full-auto" ? "danger-full-access" : "workspace-write";
 }
 
 export function buildRunnerInvocation(participant, packetPath, cwd) {
@@ -46,7 +40,7 @@ export function buildRunnerInvocation(participant, packetPath, cwd) {
       }
       if (p.model) args.push("--model", p.model);
       args.push("--thinking", p.thinking ?? "off");
-      args.push("--tools", toolsForPi(p.toolsPolicy), "-p", "Follow the ConsensFlow packet provided on stdin. Return only the requested output.");
+      args.push("--tools", toolsForPi(), "-p", "Follow the ConsensFlow packet provided on stdin. Return only the requested output.");
       return { command: "pi", args, stdinMode: "packet", cwd };
     }
     case "claude-code": {
@@ -54,8 +48,7 @@ export function buildRunnerInvocation(participant, packetPath, cwd) {
       // tool_use, text — which the adapter relays for live observability and the transcript.
       // --verbose is required for stream-json in -p mode; we deliberately omit
       // --include-partial-messages (we want complete blocks, not token-level deltas).
-      const args = ["-p", "Follow the ConsensFlow packet provided on stdin. Return only the requested output.", "--output-format", "stream-json", "--verbose", "--no-session-persistence", "--allowedTools", claudeAllowedTools(p.toolsPolicy)];
-      if (p.toolsPolicy === "readonly") args.push("--disallowedTools", CLAUDE_READONLY_DISALLOWED);
+      const args = ["-p", "Follow the ConsensFlow packet provided on stdin. Return only the requested output.", "--output-format", "stream-json", "--verbose", "--no-session-persistence", "--allowedTools", claudeAllowedTools()];
       if (p.model) args.push("--model", p.model);
       if (p.effort) args.push("--effort", p.effort);
       if (p.maxTurns) args.push("--max-turns", String(p.maxTurns));
@@ -80,8 +73,7 @@ export function buildRunnerInvocation(participant, packetPath, cwd) {
       if (p.agent) args.push("--agent", p.agent);
       if (p.toolsPolicy === "full-auto") args.push("--dangerously-skip-permissions");
       args.push("Follow the ConsensFlow packet attached as a file. Return only the requested output.");
-      const env = p.toolsPolicy === "readonly" ? { OPENCODE_PERMISSION: OPENCODE_READONLY_PERMISSION } : undefined;
-      return { command: "opencode", args, stdinMode: "none", cwd, env };
+      return { command: "opencode", args, stdinMode: "none", cwd };
     }
     case "image":
       throw new Error("image participants are generated via the Codex backend, not a CLI runner (bug: should be handled upstream in the image path)");
