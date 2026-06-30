@@ -410,8 +410,6 @@ async function runImageParticipant(participant: any, prompt: string, ctx: any, p
   });
 }
 
-const HANDOFF_MAX_BYTES = 120 * 1024;
-
 // Pull the current resolved session transcript on-demand from the read-only session manager and
 // serialize it for the participant handoff. On-demand (not cached) so it stays correct across
 // fork / tree navigation / session switch. Degrades to "" if unavailable.
@@ -419,7 +417,7 @@ function collectHandoff(ctx: any): string {
   try {
     const sessionManager = ctx?.sessionManager;
     if (!sessionManager || typeof sessionManager.getBranch !== "function") return "";
-    return serializeTranscript(sessionManager.getBranch(), { maxBytes: HANDOFF_MAX_BYTES });
+    return serializeTranscript(sessionManager.getBranch()); // 48 KB default + CONSENSFLOW_HANDOFF_MAX_BYTES env, from handoff.js
   } catch {
     return "";
   }
