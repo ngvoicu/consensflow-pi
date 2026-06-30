@@ -20,7 +20,7 @@ The whole idea in five bullets:
 
 - **Participant** = a named *(agent + model)* combo. Configure once, reuse from any project.
 - **One at a time.** `@zeus @athena …` is rejected — ask one, read, then ask the next.
-- **Read-write by default.** A participant runs like a standard CLI call — it can read, edit files, and run commands, confined to the project workspace (`workspace-write`). `--rw` is accepted but redundant (it just equals the default); `--tools full-auto` is the only escalation, bypassing the engine's sandbox/approval checks.
+- **Read-write by default.** A participant runs like a standard CLI call — it can read, edit files, and run commands, confined to the project workspace (`workspace-write`). `--tools full-auto` is the only escalation, bypassing the engine's sandbox/approval checks.
 - **One-shot, but context-aware.** Each call is fresh (no memory of past calls), yet it always receives the current session handoff — *including earlier participants' answers* — so the 2nd agent you ask can build on the 1st.
 - **The lead can ask too — and asks before applying.** Pi will consult a participant on its own initiative when a second opinion would help, then report back and get your go-ahead before applying anything — unless you pre-authorized it (e.g. "get Zeus's take and apply what makes sense").
 
@@ -171,7 +171,7 @@ Why some cells differ: `max` exists only on claude-code — pi's thinking scale 
 
 Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
-Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets run read-write by default (`workspace-write`, confined to the project workspace); `--rw` is redundant with that default. Add `--tools full-auto` for one run that bypasses the engine's sandbox/approval checks.
+Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets run read-write by default (`workspace-write`, confined to the project workspace). Add `--tools full-auto` for one run that bypasses the engine's sandbox/approval checks.
 
 Add one, all, or a renamed copy:
 
@@ -198,7 +198,7 @@ The popular models already ship as presets (the tables above), so usually you ju
     --effort max --tools full-auto
 ```
 
-> **Default vs full-auto.** By default a participant runs read-write, confined to the project workspace (`workspace-write`) — exactly like running the CLI yourself: it can read, edit files, and run commands. The only escalation is `--tools full-auto` (which bypasses the engine's sandbox/approval checks); `--rw` is accepted but redundant with the default.
+> **Default vs full-auto.** By default a participant runs read-write, confined to the project workspace (`workspace-write`) — exactly like running the CLI yourself: it can read, edit files, and run commands. The only escalation is `--tools full-auto` (which bypasses the engine's sandbox/approval checks).
 
 ### Step 3 — Ask a participant
 
@@ -234,7 +234,7 @@ The reply appears inline in Pi. Every run is also saved under the ConsensFlow ho
   transcript.md  # human-readable thinking / tool calls / answer — the durability backstop
 ```
 
-**Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive — direct `@name` / `/consensflow:cf` calls appear as lightweight messages in the main session, and lead-initiated `cf_run_participant` calls stream via `onUpdate`. Every text-CLI run also writes `transcript.md` into the run dir as a durability backstop; on a timeout you get the partial trail under a clear header, never a raw event dump.
+**Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive — direct `@name` / `/consensflow:cf` calls appear as lightweight messages in the main session, and lead-initiated `cf_run_participant` calls stream via `onUpdate`. This streaming is automatic and always on (no flag needed); the only exception is an explicit `--json` for machine-readable output. Always run participant calls in the FOREGROUND, NEVER in the background (or detached) — it's a hard property of the tool — so the live reasoning/tool/answer trail can stream as it arrives. Every text-CLI run also writes `transcript.md` into the run dir as a durability backstop; on a timeout you get the partial trail under a clear header, never a raw event dump.
 
 A consult can modify files, so after a run review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping or building on it. **Per-call escalation:** pass `--tools full-auto` to `/consensflow:cf`, or give `cf_run_participant` a `toolsPolicy` of `full-auto`, to let only that run bypass the engine's sandbox/approval checks — no second roster entry needed.
 
