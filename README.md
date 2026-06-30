@@ -234,7 +234,7 @@ The reply appears inline in Pi. Every run is also saved under the ConsensFlow ho
   transcript.md  # human-readable thinking / tool calls / answer — the durability backstop
 ```
 
-**Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive — direct `@name` / `/consensflow:cf` calls appear as lightweight messages in the main session, and lead-initiated `cf_run_participant` calls stream via `onUpdate`. This streaming is automatic and always on (no flag needed); the only exception is an explicit `--json` for machine-readable output. Always run participant calls in the FOREGROUND, NEVER in the background (or detached) — it's a hard property of the tool — so the live reasoning/tool/answer trail can stream as it arrives. Every text-CLI run also writes `transcript.md` into the run dir as a durability backstop; on a timeout you get the partial trail under a clear header, never a raw event dump.
+**Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive — direct `@name` / `/consensflow:cf` calls appear as lightweight messages in the main session, and lead-initiated `cf_run_participant` calls stream via `onUpdate`. This streaming is automatic and always on (no flag needed); the only exception is an explicit `--json` for machine-readable output. Always run participant calls in the FOREGROUND, NEVER in the background (or detached) — it's a hard property of the tool — so the live reasoning/tool/answer trail can stream as it arrives. Every text-CLI run also writes `transcript.md` into the run dir as a durability backstop; if a run ends without a final answer you get the bounded trail under a clear header, never a raw event dump. cf never caps a run — runs are unbounded.
 
 A consult can modify files, so after a run review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping or building on it. **Per-call escalation:** pass `--tools full-auto` to `/consensflow:cf`, or give `cf_run_participant` a `toolsPolicy` of `full-auto`, to let only that run bypass the engine's sandbox/approval checks — no second roster entry needed.
 
@@ -300,7 +300,7 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 /consensflow:cf ask @name <prompt> [--tools full-auto]
 ```
 
-Preset add flags: `--name`, `--id`, `--cwd`, `--timeoutMs`, `--description`.
+Preset add flags: `--name`, `--id`, `--cwd`, `--description`.
 Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thinking`, `--tools`, `--skills`, `--agent`, `--maxTurns`.
 
 ---

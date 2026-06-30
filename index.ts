@@ -67,7 +67,6 @@ export default async function consensflow(pi: ExtensionAPI) {
       prompt: Type.String({ description: "Natural-language request for that participant" }),
       context: Type.Optional(Type.String({ description: "Optional focused note/brief added on top of the auto-included session handoff." })),
       includeHandoff: Type.Optional(Type.Boolean({ description: "Attach the current session transcript as context. Defaults to true." })),
-      timeoutMs: Type.Optional(Type.Number({ description: "Optional timeout override" })),
       toolsPolicy: Type.Optional(Type.String({ description: "Per-call override: 'workspace-write' (the default) or 'full-auto' (bypass the workspace sandbox). Defaults to the participant's stored policy." })),
       images: Type.Optional(Type.Array(Type.String(), { description: "Image-participant only (kind=image): file paths to reference images (.png/.jpg/.jpeg/.webp/.gif) for gpt-image-2 to edit/condition on. Ignored by text participants." })),
     }),
@@ -97,7 +96,6 @@ export default async function consensflow(pi: ExtensionAPI) {
         handoff,
         extraContext: params.context,
         signal,
-        timeoutMs: params.timeoutMs,
         toolsPolicy: params.toolsPolicy,
         // Stream the participant's normalized thinking / tool calls / answer into the Pi UI as it
         // arrives — the pi analog of cc's always-on streaming (foreground-incremental observability).
@@ -288,7 +286,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
     if (presetRef === "all") {
       // `--name`/`--id` would make every preset derive the same id and overwrite each other (saving
       // one participant while reporting "Saved 24"). Only allow flags that apply uniformly to a bulk add.
-      assertAllowedFlags(parsed.flags, ["cwd", "timeoutMs", "description"], "preset add all");
+      assertAllowedFlags(parsed.flags, ["cwd", "description"], "preset add all");
       const participants = [];
       for (const presetId of listPresetIds()) {
         participants.push(await upsertParticipant(ctx.cwd, participantFromPreset(presetId, presetOverrides(parsed.flags))));
@@ -340,7 +338,6 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
     extraContext: parsed.context,
     handoff,
     signal,
-    timeoutMs: parsed.timeoutMs,
     toolsPolicy: parsed.toolsPolicy,
     // Direct @mention and /consensflow:cf runs should be visible in the main session too, not
     // just as a final answer after a long child process. Stream the normalized trail as
@@ -424,7 +421,7 @@ function collectHandoff(ctx: any): string {
 }
 
 type ParticipantPrompt =
-  | { participant: string; prompt: string; error?: undefined; context?: string; includeHandoff?: boolean; timeoutMs?: number; toolsPolicy?: string; images?: string[] }
+  | { participant: string; prompt: string; error?: undefined; context?: string; includeHandoff?: boolean; toolsPolicy?: string; images?: string[] }
   | { participant?: undefined; prompt?: undefined; error: string };
 
 // Tokenize a typed line and decide whether it addresses one participant. When the line contains
@@ -445,13 +442,11 @@ function parseRunPrompt(tokens: string[], known: Set<string>): ParticipantPrompt
   const prompt = parseParticipantPrompt(parsed.positional, known) as ParticipantPrompt | null;
   if (!prompt || prompt.error) return prompt;
   const toolsPolicy = parsed.flags.rw === true ? "workspace-write" : stringFlag(parsed.flags.tools ?? parsed.flags.toolsPolicy);
-  const timeoutMs = numberFlag(parsed.flags["timeout-ms"] ?? parsed.flags.timeoutMs);
   const images = Array.isArray(parsed.flags.image) ? (parsed.flags.image as string[]) : undefined;
   return {
     ...prompt,
     context: stringFlag(parsed.flags.context),
     includeHandoff: flagBool(parsed.flags, "handoff") ?? true,
-    timeoutMs,
     toolsPolicy,
     images,
   };
@@ -460,7 +455,7 @@ function parseRunPrompt(tokens: string[], known: Set<string>): ParticipantPrompt
 function parseRunOptions(tokens: string[]) {
   const positional: string[] = [];
   const flags: Record<string, unknown> = {};
-  const valueFlags = new Set(["tools", "toolsPolicy", "context", "timeout-ms", "timeoutMs", "image"]);
+  const valueFlags = new Set(["tools", "toolsPolicy", "context", "image"]);
   const booleanFlags = new Set(["rw", "handoff", "no-handoff"]);
   // Repeatable flags collect into an array: `--image a.png --image b.png` → ["a.png", "b.png"].
   const multiValueFlags = new Set(["image"]);
@@ -505,22 +500,14 @@ function flagBool(flags: Record<string, unknown>, name: string) {
   return undefined;
 }
 
-function numberFlag(value: unknown) {
-  const text = stringFlag(value);
-  if (text === undefined) return undefined;
-  const n = Number(text);
-  if (!Number.isFinite(n) || n <= 0) throw new Error(`timeout must be a positive number of milliseconds, got: ${text}`);
-  return n;
-}
-
 // Slugified ids + names of every configured participant, matching getParticipant's resolution.
 async function knownParticipantKeys(cwd: string): Promise<Set<string>> {
   const participants = await loadParticipants(cwd).catch(() => []);
   return new Set((participants as any[]).flatMap((p) => [p.id, slugify(p.name)]).filter(Boolean));
 }
 
-const PRESET_OVERRIDE_FLAGS = ["name", "id", "cwd", "timeoutMs", "description"];
-const CUSTOM_ADD_FLAGS = ["name", "id", "kind", "model", "provider", "effort", "thinking", "tools", "toolsPolicy", "skills", "skillsPolicy", "agent", "cwd", "timeoutMs", "maxTurns", "description"];
+const PRESET_OVERRIDE_FLAGS = ["name", "id", "cwd", "description"];
+const CUSTOM_ADD_FLAGS = ["name", "id", "kind", "model", "provider", "effort", "thinking", "tools", "toolsPolicy", "skills", "skillsPolicy", "agent", "cwd", "maxTurns", "description"];
 const CUSTOM_SHAPE_FLAGS = ["kind", "model", "provider", "effort", "thinking", "tools", "toolsPolicy", "skills", "skillsPolicy", "agent", "maxTurns"];
 
 function assertAllowedFlags(flags: Record<string, unknown>, allowed: string[], context: string) {
@@ -550,7 +537,7 @@ function stringFlag(value: unknown) {
 }
 
 function presetOverrides(flags: Record<string, unknown>) {
-  return { name: flags.name, id: flags.id, cwd: flags.cwd, timeoutMs: flags.timeoutMs, description: flags.description };
+  return { name: flags.name, id: flags.id, cwd: flags.cwd, description: flags.description };
 }
 
 function customParticipantInput(name: string, flags: Record<string, unknown>) {
@@ -566,7 +553,6 @@ function customParticipantInput(name: string, flags: Record<string, unknown>) {
     skillsPolicy: flags.skills ?? flags.skillsPolicy,
     agent: flags.agent,
     cwd: flags.cwd,
-    timeoutMs: flags.timeoutMs,
     maxTurns: flags.maxTurns,
     description: flags.description,
   };
@@ -635,11 +621,7 @@ function summarizeHandoff(handoff: string, included: boolean) {
 // nudge always shows. Full metadata stays in result.json and the message details.
 function renderRunResult(result: any) {
   const lines = [`# @${result.participant.id}`];
-  if (result.timedOut) {
-    // A timeout is not a failure with a meaningful exit code — the partial trail below is the
-    // real signal. Don't print "exit 0", which reads as success.
-    lines.push("", `(timed out — partial output below; artifacts: ${result.runDir})`);
-  } else if (result.exitCode !== 0) {
+  if (result.exitCode !== 0) {
     lines.push("", `Run failed: exit ${result.exitCode} — artifacts: ${result.runDir}`);
   }
   if (result.handoffSummary?.startsWith("empty")) lines.push("", `Handoff: ${result.handoffSummary}`);

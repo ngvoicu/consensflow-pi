@@ -1,6 +1,5 @@
 import { slugify, stripMention } from "./utils.js";
 
-const T = 900000;
 
 export const PARTICIPANT_PRESETS = [
   // --- Claude Fable 5 — Anthropic's most capable model (priced above Opus).
@@ -15,7 +14,6 @@ export const PARTICIPANT_PRESETS = [
     model: "claude-fable-5",
     effort: "max",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "clio",
@@ -27,7 +25,6 @@ export const PARTICIPANT_PRESETS = [
     model: "claude-fable-5",
     effort: "xhigh",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "euterpe",
@@ -39,7 +36,6 @@ export const PARTICIPANT_PRESETS = [
     model: "claude-fable-5",
     effort: "high",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "thalia",
@@ -51,7 +47,6 @@ export const PARTICIPANT_PRESETS = [
     model: "claude-fable-5",
     effort: "medium",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
 
   // --- House team: strong default participants per engine --------------------
@@ -65,7 +60,6 @@ export const PARTICIPANT_PRESETS = [
     model: "claude-opus-4-8",
     effort: "max",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "apollo",
@@ -77,7 +71,6 @@ export const PARTICIPANT_PRESETS = [
     model: "claude-opus-4-8",
     effort: "xhigh",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "artemis",
@@ -89,7 +82,6 @@ export const PARTICIPANT_PRESETS = [
     model: "claude-opus-4-8",
     effort: "medium",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "athena",
@@ -101,7 +93,6 @@ export const PARTICIPANT_PRESETS = [
     model: "gpt-5.5",
     effort: "xhigh",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "perseus",
@@ -113,7 +104,6 @@ export const PARTICIPANT_PRESETS = [
     model: "gpt-5.5",
     effort: "high",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "iris",
@@ -126,7 +116,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "xhigh",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "hermes",
@@ -139,7 +128,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "eos",
@@ -152,7 +140,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "medium",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "luna",
@@ -163,7 +150,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/moonshotai/kimi-k2.7-code",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
 
   // --- Frontier models on the other engines that run them ------------------
@@ -179,7 +165,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "xhigh",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "linus",
@@ -192,7 +177,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "erato",
@@ -205,7 +189,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "medium",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "saga",
@@ -217,7 +200,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/anthropic/claude-fable-5",
     effort: "xhigh",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "gunnlod",
@@ -229,7 +211,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/anthropic/claude-fable-5",
     effort: "high",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "kvasir",
@@ -241,7 +222,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/anthropic/claude-fable-5",
     effort: "medium",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   // Opus 4.8 on pi (anthropic provider; pi's thinking ceiling is xhigh, no "max").
   {
@@ -255,7 +235,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "xhigh",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "atlas",
@@ -268,7 +247,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "medium",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   // Opus 4.8 on OpenCode (via OpenRouter; note the dotted 4.8 id on OpenRouter).
   // OpenRouter's effort scale tops out at xhigh — "max" exists only on claude-code.
@@ -282,7 +260,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/anthropic/claude-opus-4.8",
     effort: "xhigh",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "vali",
@@ -294,7 +271,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/anthropic/claude-opus-4.8",
     effort: "medium",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   // GPT 5.5 on OpenCode (via OpenRouter).
   {
@@ -307,7 +283,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/openai/gpt-5.5",
     effort: "xhigh",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "bragi",
@@ -319,7 +294,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/openai/gpt-5.5",
     effort: "high",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "ullr",
@@ -331,7 +305,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/openai/gpt-5.5",
     effort: "medium",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
 
   // --- Fast/cheap tier: quick gut-checks ----------------------------------
@@ -345,7 +318,6 @@ export const PARTICIPANT_PRESETS = [
     model: "claude-haiku-4-5",
     effort: "low",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "loki",
@@ -357,7 +329,6 @@ export const PARTICIPANT_PRESETS = [
     model: "gpt-5.5",
     effort: "medium",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "nike",
@@ -370,7 +341,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "low",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "freya",
@@ -381,7 +351,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/deepseek/deepseek-v4-flash",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "zephyros",
@@ -394,7 +363,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "low",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "sif",
@@ -406,7 +374,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/google/gemini-3.5-flash",
     effort: "low",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
 
   // --- pi model zoo (Greek names) — popular OpenRouter models via Pi -------
@@ -421,7 +388,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "helios",
@@ -434,7 +400,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "ares",
@@ -447,7 +412,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "hephaestus",
@@ -460,7 +424,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "pan",
@@ -473,7 +436,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "aeolus",
@@ -486,7 +448,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "metis",
@@ -499,7 +460,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "prometheus",
@@ -512,7 +472,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "selene",
@@ -525,7 +484,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "daedalus",
@@ -538,7 +496,6 @@ export const PARTICIPANT_PRESETS = [
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
 
   // --- opencode model zoo (Norse names) — same models via OpenCode --------
@@ -551,7 +508,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/deepseek/deepseek-v4-pro",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "heimdall",
@@ -563,7 +519,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/google/gemini-3.1-pro-preview",
     effort: "high",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "thor",
@@ -574,7 +529,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/x-ai/grok-4.3",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "tyr",
@@ -585,7 +539,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/qwen/qwen3.7-max",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "vidar",
@@ -596,7 +549,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/meta-llama/llama-4-maverick",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "njord",
@@ -607,7 +559,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/mistralai/mistral-large-2512",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
   {
     preset: "mimir",
@@ -618,7 +569,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/minimax/minimax-m3",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
 
   // --- Image generation (Codex backend → gpt-image-2) ---------------------
@@ -631,7 +581,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "image",
     model: "gpt-5.5",
     toolsPolicy: "workspace-write",
-    timeoutMs: T,
   },
 ];
 
@@ -678,7 +627,7 @@ function stringOverride(value) {
 
 function allowedOverrides(overrides) {
   const result = {};
-  for (const key of ["cwd", "timeoutMs", "description"]) {
+  for (const key of ["cwd", "description"]) {
     if (overrides[key] !== undefined) result[key] = overrides[key];
   }
   return result;

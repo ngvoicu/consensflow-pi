@@ -119,7 +119,6 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 - `prompt` — the exact question/task for that participant.
 - `context` — optional focused brief added on top of the automatic session handoff.
 - `includeHandoff` — defaults to true; set false only when the participant should not see the current session snapshot.
-- `timeoutMs` — optional timeout override.
 - `toolsPolicy` — optional per-call tools override: `workspace-write` (the default — confined to the project workspace) or `full-auto` (escalation that bypasses the engine's sandbox/approval checks). Omit it for the default `workspace-write`.
 
 ## Tools policy: workspace-write (default) vs full-auto
