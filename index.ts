@@ -88,6 +88,7 @@ export default async function consensflow(pi: ExtensionAPI) {
       onUpdate?.({ content: [{ type: "text", text: `Asking @${participant.id}...` }] });
       const includeHandoff = params.includeHandoff ?? true;
       const handoff = includeHandoff ? collectHandoff(ctx) : "";
+      let sawDelta = false;
       const result = await runNamedParticipant({
         cwd: ctx.cwd,
         participantRef: participant,
@@ -101,6 +102,9 @@ export default async function consensflow(pi: ExtensionAPI) {
         // Stream the participant's normalized thinking / tool calls / answer into the Pi UI as it
         // arrives — the pi analog of cc's --stream (foreground-incremental observability).
         onEvent: (event: any) => {
+          if (event.kind === "delta") { sawDelta = true; if (event.text) onUpdate?.({ content: [{ type: "text", text: event.text }] }); return; } // pi reasoning/text, flowing like its own UI
+          // Once deltas have streamed, the message_end thinking/text blocks are redundant — skip them.
+          if (sawDelta && (event.kind === "thinking" || event.kind === "text")) return;
           const line = renderEvent(event);
           if (line) onUpdate?.({ content: [{ type: "text", text: line }] });
         },
