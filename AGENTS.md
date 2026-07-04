@@ -1,6 +1,6 @@
 # AGENTS.md — ConsensFlow Pi
 
-Pi-native ConsensFlow package — the sole project in this workspace. (The earlier `consensflow-cli/` has been removed.)
+Pi-native ConsensFlow package — the Pi half of this workspace; its Claude Code sibling is `../consensflow-cc/`, kept in parity. (The earlier `consensflow-cli/` has been removed.)
 
 ## What this is
 
