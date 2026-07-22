@@ -19,7 +19,7 @@ Think of it as a bench of advisors/helpers on speed-dial. **You stay in charge**
 The whole idea in five bullets:
 
 - **Participant** = a named *(agent + model)* combo. Configure once, reuse from any project.
-- **One at a time.** `@zeus @athena …` is rejected — ask one, read, then ask the next.
+- **One at a time.** `@zeus @gaia …` is rejected — ask one, read, then ask the next.
 - **Read-write by default.** A participant runs like a standard CLI call — it can read, edit files, and run commands, confined to the project workspace (`workspace-write`). `--tools full-auto` is the only escalation, bypassing the engine's sandbox/approval checks.
 - **One-shot, but context-aware.** Each call is fresh (no memory of past calls), yet it always receives the current session handoff — *including earlier participants' answers* — so the 2nd agent you ask can build on the 1st.
 - **The lead can ask too — and asks before applying.** Pi will consult a participant on its own initiative when a second opinion would help, then report back and get your go-ahead before applying anything — unless you pre-authorized it (e.g. "get Zeus's take and apply what makes sense").
@@ -112,7 +112,7 @@ See the presets:
 
 All presets in one view. The same model+effort family appears on **every tool that runs it**, so you can compare how different harnesses drive the same model. Effort means `--effort` on claude-code/codex, the `--thinking` level on pi, and the `--variant` on opencode.
 
-Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8, and GPT 5.5 lead; the rest are alphabetical.
+Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8, and GPT 5.6 lead; the rest are alphabetical.
 
 | Preset | Tool | Model | Effort |
 |---|---|---|---|
@@ -143,11 +143,23 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@nike` | pi | `openrouter/google/gemini-3.5-flash` | low |
 | `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | low |
 | `@prometheus` | pi | `openrouter/z-ai/glm-5.2` | high |
+| `@hyperion` | codex | `gpt-5.6-sol` | ultra |
+| `@phoebus` | codex | `gpt-5.6-sol` | xhigh |
+| `@aether` | pi | `openai-codex/gpt-5.6-sol` | xhigh |
+| `@sunna` | opencode | `openrouter/openai/gpt-5.6-sol` | xhigh |
+| `@gaia` | codex | `gpt-5.6-terra` | xhigh |
+| `@rhea` | pi | `openai-codex/gpt-5.6-terra` | xhigh |
+| `@jord` | opencode | `openrouter/openai/gpt-5.6-terra` | xhigh |
+| `@diana` | codex | `gpt-5.6-luna` | xhigh |
+| `@phoebe` | pi | `openai-codex/gpt-5.6-luna` | xhigh |
+| `@bil` | opencode | `openrouter/openai/gpt-5.6-luna` | xhigh |
 | `@ares` | pi | `openrouter/x-ai/grok-4.3` | high |
 | `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — |
 | `@selene` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high |
 | `@daedalus` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high |
 | `@luna` | opencode | `openrouter/moonshotai/kimi-k2.7-code` | — |
+| `@endymion` | pi | `openrouter/moonshotai/kimi-k3` | xhigh |
+| `@mani` | opencode | `openrouter/moonshotai/kimi-k3` | — |
 | `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high |
 | `@vidar` | opencode | `openrouter/meta-llama/llama-4-maverick` | — |
 | `@metis` | pi | `openrouter/minimax/minimax-m3` | high |
@@ -162,7 +174,7 @@ Why some cells differ: `max` exists only on claude-code — pi's thinking scale 
 
 Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
-Auth, per row: Claude models on claude-code ride your Claude login; the `gpt-5.6-*` variants on codex ride your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets run read-write by default (`workspace-write`, confined to the project workspace). Add `--tools full-auto` for one run that bypasses the engine's sandbox/approval checks.
+Auth, per row: Claude models on claude-code ride your Claude login; the `gpt-5.6-*` variants on codex — and their `openai-codex/...` twins on pi — ride your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets run read-write by default (`workspace-write`, confined to the project workspace). Add `--tools full-auto` for one run that bypasses the engine's sandbox/approval checks.
 
 Add one, all, or a renamed copy:
 
@@ -203,12 +215,12 @@ Two equivalent ways:
 A few real examples:
 
 ```text
-@athena Review the error handling in src/server.ts — blockers and test gaps only.
-@iris What questions should I answer before I start building this?
+@gaia Review the error handling in src/server.ts — blockers and test gaps only.
+@aether What questions should I answer before I start building this?
 @zeus Do you agree with Athena, or push back?     # he'll see Athena's earlier reply in the handoff
 ```
 
-- Mention **one** participant. `@zeus @athena …` is rejected on purpose.
+- Mention **one** participant. `@zeus @gaia …` is rejected on purpose.
 - Participants don't get your git state automatically — when you want a diff reviewed, paste the relevant parts into the prompt (or have the Pi lead include them via the tool's `context` brief).
 - A stray `@something` that isn't a participant (like `@types/node`) is ignored and just goes to your Pi lead.
 

@@ -114,6 +114,7 @@ test("participant presets expose the allowed creation list", () => {
   assert.deepEqual(listPresetIds(), [
     "calliope", "clio", "euterpe", "thalia",
     "hyperion", "phoebus", "gaia", "diana",
+    "aether", "rhea", "phoebe", "sunna", "jord", "bil",
     "zeus", "apollo", "artemis", "luna",
     "orpheus", "linus", "erato", "saga", "gunnlod", "kvasir",
     "kronos", "atlas", "baldr", "vali",
@@ -126,7 +127,7 @@ test("participant presets expose the allowed creation list", () => {
   assert.equal(getPreset("gaia").model, "gpt-5.6-terra");
   assert.equal(getPreset("endymion").thinking, "xhigh");
   assert.equal(getPreset("pygmalion").kind, "image");
-  // GPT is Codex-only now (the 5.6 trio): the 5.5 presets on codex/pi/opencode were retired.
+  // GPT 5.5 was retired in 1.7.0 — every GPT participant now runs a 5.6 variant.
   assert.ok(!PARTICIPANT_PRESETS.some((p) => p.kind !== "image" && String(p.model).includes("gpt-5.5")));
   // The frontier matrix: same model+effort family on every engine that runs it.
   assert.equal(getPreset("artemis").effort, "medium");
@@ -149,6 +150,18 @@ test("participant presets expose the allowed creation list", () => {
   assert.equal(getPreset("gaia").effort, "xhigh");
   assert.equal(getPreset("diana").model, "gpt-5.6-luna");
   assert.equal(getPreset("diana").effort, "xhigh");
+  // The same trio on the other two engines that reach it: pi through the openai-codex
+  // (ChatGPT) login, opencode through OpenRouter. Both carry xhigh.
+  assert.equal(getPreset("aether").kind, "pi");
+  assert.equal(getPreset("aether").model, "openai-codex/gpt-5.6-sol");
+  assert.equal(getPreset("aether").thinking, "xhigh");
+  assert.equal(getPreset("rhea").model, "openai-codex/gpt-5.6-terra");
+  assert.equal(getPreset("phoebe").model, "openai-codex/gpt-5.6-luna");
+  assert.equal(getPreset("sunna").kind, "opencode");
+  assert.equal(getPreset("sunna").model, "openrouter/openai/gpt-5.6-sol");
+  assert.equal(getPreset("sunna").effort, "xhigh");
+  assert.equal(getPreset("jord").model, "openrouter/openai/gpt-5.6-terra");
+  assert.equal(getPreset("bil").model, "openrouter/openai/gpt-5.6-luna");
   // Kimi K3 runs on both engines: endymion (pi, xhigh thinking → K3 max via ~/.pi/agent/models.json)
   // and mani (opencode, no catalog variants → no effort flag).
   assert.equal(getPreset("endymion").kind, "pi");
