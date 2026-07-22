@@ -64,7 +64,7 @@ Participants are configured in the shared roster `~/.consensflow/participants.js
 /consensflow:participants add daedalus          # Pi-backed Kimi K2.7 Code → @daedalus
 /consensflow:participants add all               # add every preset
 /consensflow:participants add zeus --name Deepreview    # preset backend, renamed → @deepreview
-/consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high
+/consensflow:participants add --name Builder --kind codex --model gpt-5.6-sol --effort high
                                                 # fully custom; read-write (workspace-write) by default
 ```
 

@@ -114,24 +114,26 @@ test("participant presets expose the allowed creation list", () => {
   assert.deepEqual(listPresetIds(), [
     "calliope", "clio", "euterpe", "thalia",
     "hyperion", "phoebus", "gaia", "diana",
-    "zeus", "apollo", "artemis", "athena", "perseus", "iris", "hermes", "eos", "luna",
+    "zeus", "apollo", "artemis", "luna",
     "orpheus", "linus", "erato", "saga", "gunnlod", "kvasir",
-    "kronos", "atlas", "baldr", "vali", "forseti", "bragi", "ullr",
-    "hermod", "loki", "nike", "freya", "zephyros", "sif",
+    "kronos", "atlas", "baldr", "vali",
+    "hermod", "nike", "freya", "zephyros", "sif",
     "hades", "helios", "ares", "hephaestus", "pan", "aeolus", "metis", "prometheus", "selene", "daedalus", "endymion",
     "odin", "heimdall", "thor", "tyr", "vidar", "njord", "mimir", "mani",
     "pygmalion",
   ]);
   assert.equal(getPreset("zeus").kind, "claude-code");
-  assert.equal(getPreset("athena").model, "gpt-5.5");
-  assert.equal(getPreset("iris").thinking, "xhigh");
+  assert.equal(getPreset("gaia").model, "gpt-5.6-terra");
+  assert.equal(getPreset("endymion").thinking, "xhigh");
   assert.equal(getPreset("pygmalion").kind, "image");
+  // GPT is Codex-only now (the 5.6 trio): the 5.5 presets on codex/pi/opencode were retired.
+  assert.ok(!PARTICIPANT_PRESETS.some((p) => p.kind !== "image" && String(p.model).includes("gpt-5.5")));
   // The frontier matrix: same model+effort family on every engine that runs it.
   assert.equal(getPreset("artemis").effort, "medium");
-  assert.equal(getPreset("perseus").effort, "high");
+  assert.equal(getPreset("hyperion").effort, "ultra");
   assert.equal(getPreset("kronos").model, "anthropic/claude-opus-4-8");
   assert.equal(getPreset("baldr").model, "openrouter/anthropic/claude-opus-4.8");
-  assert.equal(getPreset("forseti").model, "openrouter/openai/gpt-5.5");
+  assert.equal(getPreset("saga").model, "openrouter/anthropic/claude-fable-5");
   // Effort vocabularies are engine-real: claude-code tops out at "max", Codex's GPT 5.6 ladder
   // adds "ultra" above xhigh, OpenRouter tops out at xhigh, and models without catalog variants
   // (e.g. the Kimi family on opencode) carry no effort at all.

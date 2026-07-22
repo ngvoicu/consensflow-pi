@@ -8,7 +8,7 @@ Ask other AI coding agents — **Claude Code, Codex, Pi, OpenCode** — for a se
 
 You're coding with **Pi**, your main AI assistant. Sometimes you want another model's take — maybe Claude is sharper on architecture, you want Codex to sanity-check a diff, or a cheap fast model for a quick gut-check.
 
-ConsensFlow lets you keep a roster of **participants**. A participant is just *one specific AI agent + model* that you've set up and given a name — like `@zeus` or `@athena`. When you want one's opinion, you `@mention` it right in your Pi chat. ConsensFlow then:
+ConsensFlow lets you keep a roster of **participants**. A participant is just *one specific AI agent + model* that you've set up and given a name — like `@zeus` or `@gaia`. When you want one's opinion, you `@mention` it right in your Pi chat. ConsensFlow then:
 
 1. packages a snapshot of your current conversation (the **handoff**) plus your question,
 2. runs that agent in an isolated subprocess as a **one-shot** (your session stays usable),
@@ -133,15 +133,6 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@artemis` | claude-code | `claude-opus-4-8` | medium |
 | `@atlas` | pi | `anthropic/claude-opus-4-8` | medium |
 | `@vali` | opencode | `openrouter/anthropic/claude-opus-4.8` | medium |
-| `@athena` | codex | `gpt-5.5` | xhigh |
-| `@iris` | pi | `openai-codex/gpt-5.5` | xhigh |
-| `@forseti` | opencode | `openrouter/openai/gpt-5.5` | xhigh |
-| `@perseus` | codex | `gpt-5.5` | high |
-| `@hermes` | pi | `openai-codex/gpt-5.5` | high |
-| `@bragi` | opencode | `openrouter/openai/gpt-5.5` | high |
-| `@loki` | codex | `gpt-5.5` | medium |
-| `@eos` | pi | `openai-codex/gpt-5.5` | medium |
-| `@ullr` | opencode | `openrouter/openai/gpt-5.5` | medium |
 | `@hermod` | claude-code | `claude-haiku-4-5` | low |
 | `@zephyros` | pi | `openrouter/deepseek/deepseek-v4-flash` | low |
 | `@freya` | opencode | `openrouter/deepseek/deepseek-v4-flash` | — |
@@ -171,7 +162,7 @@ Why some cells differ: `max` exists only on claude-code — pi's thinking scale 
 
 Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
-Auth, per row: Claude models on claude-code ride your Claude login; `gpt-5.5` on codex/pi rides your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets run read-write by default (`workspace-write`, confined to the project workspace). Add `--tools full-auto` for one run that bypasses the engine's sandbox/approval checks.
+Auth, per row: Claude models on claude-code ride your Claude login; the `gpt-5.6-*` variants on codex ride your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets run read-write by default (`workspace-write`, confined to the project workspace). Add `--tools full-auto` for one run that bypasses the engine's sandbox/approval checks.
 
 Add one, all, or a renamed copy:
 
@@ -191,7 +182,7 @@ The popular models already ship as presets (the tables above), so usually you ju
 /consensflow:participants add --name Sonnet --kind claude-code --model claude-sonnet-4-6 --effort high
 
 # Any OpenRouter model via Pi (reasoning via --thinking off | minimal | low | medium | high | xhigh)
-/consensflow:participants add --name PiGPT --kind pi --model openrouter/openai/gpt-5.5 --thinking high
+/consensflow:participants add --name PiGrok --kind pi --model openrouter/x-ai/grok-4.3 --thinking high
 
 # A participant pinned to full-auto (OpenCode; effort maps to --variant)
 /consensflow:participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.7-code \

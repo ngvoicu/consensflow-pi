@@ -11,7 +11,8 @@ A **Pi** (`@earendil-works/pi-coding-agent`) extension that routes one natural-l
 
 ## Working here
 
-- **No local `node_modules` or `dist`.** Peer deps come from the host `pi` install; the `.ts` is transpiled and loaded by `pi` from source on each start (`pi list` shows the extension pointing at this dir). A fresh `pi` session picks up edits; a running one needs `/reload`.
+- **No local `node_modules` or `dist`.** Peer deps come from the host `pi` install; the `.ts` is transpiled by `pi` at load time (no build step).
+- **Interactive `pi` does NOT load this checkout.** The extension is installed as a git package from https://github.com/ngvoicu/consensflow-pi — `pi list` shows the URL, and `pi` loads from its own clone at `~/.pi/agent/git/github.com/ngvoicu/consensflow-pi`. Local edits reach interactive sessions only after: commit → push `upstream main` (GitHub) → `pi update https://github.com/ngvoicu/consensflow-pi` (or `pi update --all`) → new session (a running one needs `/reload`). To test unpushed edits, use the headless smoke command below (`-e .` loads from this dir), or install from the local clone instead (see README "Or install from a local clone").
 - **Tests cover `lib/*.js` only**, not the `.ts`:
   ```bash
   npm test                                                            # node --test tests/*.test.mjs

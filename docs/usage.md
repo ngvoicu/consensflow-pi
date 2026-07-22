@@ -12,7 +12,7 @@ Participants are stored in the shared roster `~/.consensflow/participants.json`,
 /consensflow:participants add daedalus                 # Pi-backed Kimi K2.7 Code (-> @daedalus)
 /consensflow:participants add zeus --name Deepreview   # preset backend, custom name (-> @deepreview)
 /consensflow:participants add all                      # every preset
-/consensflow:participants add --name Builder --kind codex --model gpt-5.5 --effort high \
+/consensflow:participants add --name Builder --kind codex --model gpt-5.6-sol --effort high \
     --tools full-auto                                 # fully custom, sandbox-bypassing escalation
 ```
 

@@ -4,7 +4,7 @@ Pi-native ConsensFlow package — the Pi half of this workspace; its Claude Code
 
 ## What this is
 
-A Pi package containing a TypeScript extension and skill for routing a natural-language prompt to one named participant at a time. It is installed into `pi` as a local extension (`pi list` shows it pointing at this directory) and loaded from source on each start.
+A Pi package containing a TypeScript extension and skill for routing a natural-language prompt to one named participant at a time. It is installed into `pi` as a git package from https://github.com/ngvoicu/consensflow-pi (`pi list` shows the URL; `pi` loads from its own clone at `~/.pi/agent/git/github.com/ngvoicu/consensflow-pi`, transpiling the `.ts` on each start). Local edits reach interactive `pi` only after commit → push `upstream main` → `pi update https://github.com/ngvoicu/consensflow-pi` → new session (or `/reload`); the headless smoke command in "Commands & verify" tests this checkout directly via `-e .`.
 
 Core direction:
 
