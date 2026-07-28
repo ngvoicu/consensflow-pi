@@ -36,13 +36,13 @@ ConsensFlow sees exactly one @mention  →  intercepts the message
    │
    ▼
 It builds a "packet" for @zeus:
-   • who @zeus is        (claude-code · claude-opus-4-8 · max)
+   • who @zeus is        (claude-code · claude-opus-5 · max)
    • tools line          (workspace-write by default — or full-auto if you escalated)
    • handoff             (a snapshot of THIS session + earlier @participant replies)
    • your question
    ▼
 Runs @zeus as an isolated, one-shot subprocess:
-   claude -p … --model claude-opus-4-8 --effort max   (workspace-write by default)
+   claude -p … --model claude-opus-5 --effort max   (workspace-write by default)
    no memory of past calls, no live access to your session — just the packet
    ▼
 Saves everything as an artifact:
@@ -98,6 +98,25 @@ pi install ./consensflow-pi
 
 ---
 
+## Updating
+
+A new ConsensFlow release ships a new preset catalog — new models, retired ones, bumped effort tiers. Updating the extension does **not** touch participants you already added: each roster entry keeps the model it was created with. `participants sync` re-resolves them against the current catalog.
+
+```bash
+pi update --extension https://github.com/ngvoicu/consensflow-pi   # or: pi update --extensions
+```
+
+Then, in a reloaded Pi session (`/reload`):
+
+```text
+/consensflow:participants sync --dry-run   # preview — prints exactly what would change
+/consensflow:participants sync             # apply
+```
+
+Sync rewrites only the fields a preset owns: kind, model, effort/thinking, and tool policy. Your rename (`--name`), per-participant `--cwd`, and any custom `--description` survive it; fully custom participants (no preset) and participants whose preset has left the catalog are left alone and reported. `/consensflow:status` and `/consensflow:participants` flag "N behind the catalog" when a participant is out of date, so you don't have to remember.
+
+Because both hosts share one roster, syncing in either place upgrades it for both.
+
 ## How to use
 
 ### Step 1 — Configure a participant
@@ -112,7 +131,7 @@ See the presets:
 
 All presets in one view. The same model+effort family appears on **every tool that runs it**, so you can compare how different harnesses drive the same model. Effort means `--effort` on claude-code/codex, the `--thinking` level on pi, and the `--variant` on opencode.
 
-Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8, and GPT 5.6 lead; the rest are alphabetical.
+Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 5, and GPT 5.6 lead; the rest are alphabetical.
 
 | Preset | Tool | Model | Effort |
 |---|---|---|---|
@@ -126,13 +145,13 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@thalia` | claude-code | `claude-fable-5` | medium |
 | `@erato` | pi | `anthropic/claude-fable-5` | medium |
 | `@kvasir` | opencode | `openrouter/anthropic/claude-fable-5` | medium |
-| `@zeus` | claude-code | `claude-opus-4-8` | max |
-| `@apollo` | claude-code | `claude-opus-4-8` | xhigh |
-| `@kronos` | pi | `anthropic/claude-opus-4-8` | xhigh |
-| `@baldr` | opencode | `openrouter/anthropic/claude-opus-4.8` | xhigh |
-| `@artemis` | claude-code | `claude-opus-4-8` | medium |
-| `@atlas` | pi | `anthropic/claude-opus-4-8` | medium |
-| `@vali` | opencode | `openrouter/anthropic/claude-opus-4.8` | medium |
+| `@zeus` | claude-code | `claude-opus-5` | max |
+| `@apollo` | claude-code | `claude-opus-5` | xhigh |
+| `@kronos` | pi | `anthropic/claude-opus-5` | xhigh |
+| `@baldr` | opencode | `openrouter/anthropic/claude-opus-5` | xhigh |
+| `@artemis` | claude-code | `claude-opus-5` | medium |
+| `@atlas` | pi | `anthropic/claude-opus-5` | medium |
+| `@vali` | opencode | `openrouter/anthropic/claude-opus-5` | medium |
 | `@hermod` | claude-code | `claude-haiku-4-5` | low |
 | `@zephyros` | pi | `openrouter/deepseek/deepseek-v4-flash` | low |
 | `@freya` | opencode | `openrouter/deepseek/deepseek-v4-flash` | — |
@@ -140,8 +159,8 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@odin` | opencode | `openrouter/deepseek/deepseek-v4-pro` | — |
 | `@helios` | pi | `openrouter/google/gemini-3.1-pro-preview` | high |
 | `@heimdall` | opencode | `openrouter/google/gemini-3.1-pro-preview` | high |
-| `@nike` | pi | `openrouter/google/gemini-3.5-flash` | low |
-| `@sif` | opencode | `openrouter/google/gemini-3.5-flash` | low |
+| `@nike` | pi | `openrouter/google/gemini-3.6-flash` | low |
+| `@sif` | opencode | `openrouter/google/gemini-3.6-flash` | low |
 | `@prometheus` | pi | `openrouter/z-ai/glm-5.2` | high |
 | `@hyperion` | codex | `gpt-5.6-sol` | ultra |
 | `@phoebus` | codex | `gpt-5.6-sol` | xhigh |
@@ -153,11 +172,8 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 4.8,
 | `@diana` | codex | `gpt-5.6-luna` | xhigh |
 | `@phoebe` | pi | `openai-codex/gpt-5.6-luna` | xhigh |
 | `@bil` | opencode | `openrouter/openai/gpt-5.6-luna` | xhigh |
-| `@ares` | pi | `openrouter/x-ai/grok-4.3` | high |
-| `@thor` | opencode | `openrouter/x-ai/grok-4.3` | — |
-| `@selene` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high |
-| `@daedalus` | pi | `openrouter/moonshotai/kimi-k2.7-code` | high |
-| `@luna` | opencode | `openrouter/moonshotai/kimi-k2.7-code` | — |
+| `@ares` | pi | `openrouter/x-ai/grok-4.5` | high |
+| `@thor` | opencode | `openrouter/x-ai/grok-4.5` | — |
 | `@endymion` | pi | `openrouter/moonshotai/kimi-k3` | xhigh |
 | `@mani` | opencode | `openrouter/moonshotai/kimi-k3` | — |
 | `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high |
@@ -180,7 +196,7 @@ Add one, all, or a renamed copy:
 
 ```text
 /consensflow:participants add zeus                    # add the zeus preset      → @zeus
-/consensflow:participants add daedalus                # Pi-backed Kimi K2.7 Code → @daedalus
+/consensflow:participants add endymion                # Pi-backed Kimi K3 → @endymion
 /consensflow:participants add all                     # add every preset at once
 /consensflow:participants add zeus --name Deepreview  # same engine/model, your name → @deepreview
 ```
@@ -194,10 +210,10 @@ The popular models already ship as presets (the tables above), so usually you ju
 /consensflow:participants add --name Sonnet --kind claude-code --model claude-sonnet-4-6 --effort high
 
 # Any OpenRouter model via Pi (reasoning via --thinking off | minimal | low | medium | high | xhigh)
-/consensflow:participants add --name PiGrok --kind pi --model openrouter/x-ai/grok-4.3 --thinking high
+/consensflow:participants add --name PiGrok --kind pi --model openrouter/x-ai/grok-4.5 --thinking high
 
 # A participant pinned to full-auto (OpenCode; effort maps to --variant)
-/consensflow:participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k2.7-code \
+/consensflow:participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k3 \
     --effort max --tools full-auto
 ```
 
@@ -296,7 +312,7 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 /consensflow:status
 /consensflow:doctor
 /consensflow:presets
-/consensflow:participants [list|presets|add|show|remove|add <…>]
+/consensflow:participants [list|presets|add|show|remove|sync|add <…>]
 
 @name <prompt>                   # ask — mention anywhere in the line
 /consensflow:cf @name <prompt> [--tools full-auto]  # explicit router; read-write by default, full-auto to escalate

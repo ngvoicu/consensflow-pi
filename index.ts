@@ -4,7 +4,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { serializeTranscript } from "./extensions/consensflow/lib/handoff.js";
 import { decodeChatGptAccountId, generateImage, imageFileToDataUrl, IMAGE_TRIGGER_DEFAULT, saveImagePng } from "./extensions/consensflow/lib/image.js";
-import { formatPresets, getPreset, listPresetIds, participantFromPreset } from "./extensions/consensflow/lib/presets.js";
+import { driftedParticipants, formatPresets, getPreset, listPresetIds, participantFromPreset } from "./extensions/consensflow/lib/presets.js";
 import {
   cfRoot,
   configHome,
@@ -17,6 +17,7 @@ import {
   recordLatestRun,
   removeParticipant,
   runsRoot,
+  syncParticipantsWithPresets,
   upsertParticipant,
 } from "./extensions/consensflow/lib/state.js";
 import { createId, parseOptions, parseParticipantPrompt, slugify, tokenize } from "./extensions/consensflow/lib/utils.js";
@@ -211,7 +212,7 @@ async function handleStatus(ctx: any, pi: ExtensionAPI) {
     `ConsensFlow home: ${configHome()}`,
     `Participants file: ${participantsPath(ctx.cwd)}`,
     `Artifact root for this workspace: ${cfRoot(ctx.cwd)}`,
-    `Participants: ${participants.length}`,
+    `Participants: ${participants.length}${driftNote(participants)}`,
     `Latest run: ${current.latestRunId ?? "none"}`,
     "",
     formatParticipants(participants, ctx.cwd),
@@ -264,6 +265,13 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
   if (sub === "presets" || sub === "preset") {
     return sendCfMessage(pi, formatPresets(), { presets: listPresetIds() });
   }
+  if (sub === "sync") {
+    const parsed = parseOptions(tokens);
+    const result = await syncParticipantsWithPresets(ctx.cwd, { dryRun: Boolean(parsed.flags["dry-run"]) });
+    if (result.synced.length > 0 && !result.dryRun) ctx.ui.notify(`Synced ${result.synced.length} participant${result.synced.length === 1 ? "" : "s"} with the catalog`, "info");
+    return sendCfMessage(pi, formatSync(result), { ...result, ...storeDetails(ctx.cwd) });
+  }
+
   if (sub === "show") {
     const ref = tokens[0];
     if (!ref) throw new Error("Usage: /consensflow:participants show @name");
@@ -319,7 +327,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
     }
     throw new Error(addUsage());
   }
-  throw new Error("Usage: /consensflow:participants list|presets|add|show|remove");
+  throw new Error("Usage: /consensflow:participants list|presets|add|show|remove|sync");
 }
 
 async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: ExtensionAPI, signal?: AbortSignal) {
@@ -592,7 +600,40 @@ function formatParticipants(participants: any[], cwd = process.cwd()) {
       "```",
     ].join("\n");
   }
-  return ["# ConsensFlow participants", "", `Participants file: ${participantsPath(cwd)}`, "", ...participants.map(formatParticipantLine)].join("\n");
+  const drift = driftNote(participants);
+  return [
+    "# ConsensFlow participants",
+    "",
+    `Participants file: ${participantsPath(cwd)}`,
+    ...(drift ? [`Catalog:${drift}`] : []),
+    "",
+    ...participants.map(formatParticipantLine),
+  ].join("\n");
+}
+
+// One-line "you are behind the catalog" hint, appended wherever the roster is summarised.
+function driftNote(participants: any[]) {
+  const drifted = driftedParticipants(participants);
+  if (drifted.length === 0) return "";
+  return `  (${drifted.length} behind the catalog — run \`/consensflow:participants sync\`)`;
+}
+
+function formatSync(result: any) {
+  const lines = ["# ConsensFlow participants sync", ""];
+  if (result.synced.length === 0) {
+    lines.push(`All ${result.total} participants already match the catalog.`);
+  } else {
+    for (const entry of result.synced) {
+      for (const change of entry.changes) {
+        // Descriptions are long; report them as a fact rather than a diff.
+        lines.push(change.field === "description" ? `@${entry.id}  description updated` : `@${entry.id}  ${change.field}  ${change.from ?? "(none)"} → ${change.to ?? "(none)"}`);
+      }
+    }
+    lines.push("");
+    lines.push(`${result.dryRun ? "Would sync" : "Synced"} ${result.synced.length} participant${result.synced.length === 1 ? "" : "s"} (${result.total - result.synced.length} already current).`);
+  }
+  if (result.orphans.length > 0) lines.push("", `Left pinned (preset no longer in the catalog): ${result.orphans.join(", ")}`);
+  return lines.join("\n");
 }
 
 function formatParticipantLine(p: any) {
@@ -680,7 +721,7 @@ Admin commands:
 - \`/consensflow:status\`
 - \`/consensflow:doctor\`
 - \`/consensflow:presets\`
-- \`/consensflow:participants list|presets|add|show|remove\`
+- \`/consensflow:participants list|presets|add|show|remove|sync\`
 
 Rules:
 

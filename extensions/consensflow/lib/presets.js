@@ -175,10 +175,10 @@ export const PARTICIPANT_PRESETS = [
     preset: "zeus",
     id: "zeus",
     name: "Zeus",
-    label: "Claude Code Opus 4.8 MAX",
-    description: "Most expensive/deep Claude Code participant for high-stakes architecture, implementation plans, and final checks.",
+    label: "Claude Code Opus 5 MAX",
+    description: "Deepest Opus-tier Claude Code participant for high-stakes architecture, implementation plans, and final checks; half the price of Fable 5, which stays the catalog ceiling (@calliope).",
     kind: "claude-code",
-    model: "claude-opus-4-8",
+    model: "claude-opus-5",
     effort: "max",
     toolsPolicy: "workspace-write",
   },
@@ -186,10 +186,10 @@ export const PARTICIPANT_PRESETS = [
     preset: "apollo",
     id: "apollo",
     name: "Apollo",
-    label: "Claude Code Opus 4.8 XHIGH",
+    label: "Claude Code Opus 5 XHIGH",
     description: "Deep but slightly cheaper/faster Claude Code participant for spec critique, design alternatives, and implementation plans.",
     kind: "claude-code",
-    model: "claude-opus-4-8",
+    model: "claude-opus-5",
     effort: "xhigh",
     toolsPolicy: "workspace-write",
   },
@@ -197,21 +197,11 @@ export const PARTICIPANT_PRESETS = [
     preset: "artemis",
     id: "artemis",
     name: "Artemis",
-    label: "Claude Code Opus 4.8 MEDIUM",
-    description: "Apollo's twin: Opus 4.8 at medium effort for quicker, cheaper Claude Code takes.",
+    label: "Claude Code Opus 5 MEDIUM",
+    description: "Apollo's twin: Opus 5 at medium effort for quicker, cheaper Claude Code takes.",
     kind: "claude-code",
-    model: "claude-opus-4-8",
+    model: "claude-opus-5",
     effort: "medium",
-    toolsPolicy: "workspace-write",
-  },
-  {
-    preset: "luna",
-    id: "luna",
-    name: "Luna",
-    label: "OpenCode Kimi K2.7 Code",
-    description: "OpenCode-backed Kimi K2.7 Code participant — Moonshot's coding-first model (OpenRouter defines no effort variants for it).",
-    kind: "opencode",
-    model: "openrouter/moonshotai/kimi-k2.7-code",
     toolsPolicy: "workspace-write",
   },
 
@@ -286,15 +276,18 @@ export const PARTICIPANT_PRESETS = [
     effort: "medium",
     toolsPolicy: "workspace-write",
   },
-  // Opus 4.8 on pi (anthropic provider; pi's thinking ceiling is xhigh, no "max").
+  // Opus 5 on pi (anthropic provider). pi's model layer gained a "max" thinking level in
+  // @earendil-works/pi-ai 0.82 (verified in its registry: claude-opus-5 maps xhigh AND max),
+  // but the pi releases shipping today still bundle an older pi-ai that caps at xhigh — so
+  // these stay at xhigh/medium, which is valid on both.
   {
     preset: "kronos",
     id: "kronos",
     name: "Kronos",
-    label: "Pi Opus 4.8 XHIGH (Anthropic)",
-    description: "Pi-backed Claude Opus 4.8 with xhigh thinking; needs Anthropic auth in pi.",
+    label: "Pi Opus 5 XHIGH (Anthropic)",
+    description: "Pi-backed Claude Opus 5 with xhigh thinking; needs Anthropic auth in pi.",
     kind: "pi",
-    model: "anthropic/claude-opus-4-8",
+    model: "anthropic/claude-opus-5",
     thinking: "xhigh",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
@@ -303,24 +296,24 @@ export const PARTICIPANT_PRESETS = [
     preset: "atlas",
     id: "atlas",
     name: "Atlas",
-    label: "Pi Opus 4.8 MEDIUM (Anthropic)",
-    description: "Pi-backed Claude Opus 4.8 with medium thinking; needs Anthropic auth in pi.",
+    label: "Pi Opus 5 MEDIUM (Anthropic)",
+    description: "Pi-backed Claude Opus 5 with medium thinking; needs Anthropic auth in pi.",
     kind: "pi",
-    model: "anthropic/claude-opus-4-8",
+    model: "anthropic/claude-opus-5",
     thinking: "medium",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
   },
-  // Opus 4.8 on OpenCode (via OpenRouter; note the dotted 4.8 id on OpenRouter).
-  // OpenRouter's effort scale tops out at xhigh — "max" exists only on claude-code.
+  // Opus 5 on OpenCode (via OpenRouter). Unlike the 4.8 generation there is no dotted id:
+  // it is plainly anthropic/claude-opus-5. Kept at the xhigh/medium tiers the 4.8 pair used.
   {
     preset: "baldr",
     id: "baldr",
     name: "Baldr",
-    label: "OpenCode Opus 4.8 XHIGH",
-    description: "OpenCode-backed Claude Opus 4.8 at xhigh variant, its OpenRouter ceiling.",
+    label: "OpenCode Opus 5 XHIGH",
+    description: "OpenCode-backed Claude Opus 5 at xhigh variant (via OpenRouter).",
     kind: "opencode",
-    model: "openrouter/anthropic/claude-opus-4.8",
+    model: "openrouter/anthropic/claude-opus-5",
     effort: "xhigh",
     toolsPolicy: "workspace-write",
   },
@@ -328,10 +321,10 @@ export const PARTICIPANT_PRESETS = [
     preset: "vali",
     id: "vali",
     name: "Vali",
-    label: "OpenCode Opus 4.8 MEDIUM",
-    description: "OpenCode-backed Claude Opus 4.8 at medium variant (via OpenRouter).",
+    label: "OpenCode Opus 5 MEDIUM",
+    description: "OpenCode-backed Claude Opus 5 at medium variant (via OpenRouter).",
     kind: "opencode",
-    model: "openrouter/anthropic/claude-opus-4.8",
+    model: "openrouter/anthropic/claude-opus-5",
     effort: "medium",
     toolsPolicy: "workspace-write",
   },
@@ -353,10 +346,10 @@ export const PARTICIPANT_PRESETS = [
     preset: "nike",
     id: "nike",
     name: "Nike",
-    label: "Pi Gemini 3.5 Flash (fast)",
-    description: "Swift, cheap Pi-backed Gemini 3.5 Flash for quick second opinions.",
+    label: "Pi Gemini 3.6 Flash (fast)",
+    description: "Swift, cheap Pi-backed Gemini 3.6 Flash for quick second opinions.",
     kind: "pi",
-    model: "openrouter/google/gemini-3.5-flash",
+    model: "openrouter/google/gemini-3.6-flash",
     thinking: "low",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
@@ -387,10 +380,10 @@ export const PARTICIPANT_PRESETS = [
     preset: "sif",
     id: "sif",
     name: "Sif",
-    label: "OpenCode Gemini 3.5 Flash (fast)",
-    description: "Swift, cheap OpenCode-backed Gemini 3.5 Flash at low variant (via OpenRouter).",
+    label: "OpenCode Gemini 3.6 Flash (fast)",
+    description: "Swift, cheap OpenCode-backed Gemini 3.6 Flash at low variant (via OpenRouter).",
     kind: "opencode",
-    model: "openrouter/google/gemini-3.5-flash",
+    model: "openrouter/google/gemini-3.6-flash",
     effort: "low",
     toolsPolicy: "workspace-write",
   },
@@ -424,10 +417,10 @@ export const PARTICIPANT_PRESETS = [
     preset: "ares",
     id: "ares",
     name: "Ares",
-    label: "Pi Grok 4.3",
-    description: "Pi-backed xAI Grok 4.3 participant (via OpenRouter).",
+    label: "Pi Grok 4.5",
+    description: "Pi-backed xAI Grok 4.5 participant (via OpenRouter).",
     kind: "pi",
-    model: "openrouter/x-ai/grok-4.3",
+    model: "openrouter/x-ai/grok-4.5",
     thinking: "high",
     skillsPolicy: "default",
     toolsPolicy: "workspace-write",
@@ -493,35 +486,11 @@ export const PARTICIPANT_PRESETS = [
     toolsPolicy: "workspace-write",
   },
   {
-    preset: "selene",
-    id: "selene",
-    name: "Selene",
-    label: "Pi Kimi K2.7 Code",
-    description: "Greek moon goddess to Luna's Roman: Pi-backed Kimi K2.7 Code participant with high thinking (via OpenRouter).",
-    kind: "pi",
-    model: "openrouter/moonshotai/kimi-k2.7-code",
-    thinking: "high",
-    skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
-  },
-  {
-    preset: "daedalus",
-    id: "daedalus",
-    name: "Daedalus",
-    label: "Pi Kimi K2.7 Code",
-    description: "Greek master craftsman: Pi-backed Kimi K2.7 Code participant with high thinking (via OpenRouter).",
-    kind: "pi",
-    model: "openrouter/moonshotai/kimi-k2.7-code",
-    thinking: "high",
-    skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
-  },
-  {
     preset: "endymion",
     id: "endymion",
     name: "Endymion",
     label: "Pi Kimi K3 XHIGH",
-    description: "Selene's beloved: Pi-backed Kimi K3 — Moonshot's 1M-context flagship reasoner — at xhigh thinking, OpenRouter's effort ceiling (needs the kimi-k3 entry in ~/.pi/agent/models.json for sane token limits and xhigh support).",
+    description: "Beloved of the moon goddess: Pi-backed Kimi K3 — Moonshot's 1M-context flagship reasoner — at xhigh thinking, OpenRouter's effort ceiling (needs the kimi-k3 entry in ~/.pi/agent/models.json for sane token limits and xhigh support).",
     kind: "pi",
     model: "openrouter/moonshotai/kimi-k3",
     thinking: "xhigh",
@@ -555,10 +524,10 @@ export const PARTICIPANT_PRESETS = [
     preset: "thor",
     id: "thor",
     name: "Thor",
-    label: "OpenCode Grok 4.3",
-    description: "OpenCode-backed xAI Grok 4.3 participant (via OpenRouter).",
+    label: "OpenCode Grok 4.5",
+    description: "OpenCode-backed xAI Grok 4.5 participant (via OpenRouter).",
     kind: "opencode",
-    model: "openrouter/x-ai/grok-4.3",
+    model: "openrouter/x-ai/grok-4.5",
     toolsPolicy: "workspace-write",
   },
   {
@@ -658,6 +627,68 @@ export function participantFromPreset(ref, overrides = {}) {
   };
   delete participant.label;
   return participant;
+}
+
+// --- Catalog drift -------------------------------------------------------
+// A roster entry snapshots its preset's engine fields, so a ConsensFlow update that ships a new
+// catalog (Opus 4.8 → Opus 5, say) does not reach participants that were already added. These
+// helpers re-resolve that: the fields below are decided entirely by the preset — participantFromPreset
+// lets only --name/--id/--cwd/--description through and there is no `participants edit` — so replacing
+// them with the catalog's current values is lossless.
+// `description` is deliberately NOT in this list, for two independent reasons: it is a documented
+// user override (`add <preset> --description …`), and the two hosts intentionally word a few
+// descriptions differently (pygmalion's login wording) while sharing ONE roster — syncing it would
+// clobber the user's text and, worse, never converge: each host would forever see the other's
+// wording as drift and re-flag the nudge. Stale description text is cosmetic (it never reaches the
+// packet); a wrong model is not.
+// Participants with no `preset`, or whose preset has since left the catalog, are left alone.
+export const PRESET_OWNED_FIELDS = ["kind", "model", "effort", "thinking", "toolsPolicy", "skillsPolicy"];
+
+// normalizeParticipant() fills these in on save, so compare against the same defaults or every
+// non-pi participant reports a phantom skillsPolicy change.
+const PRESET_FIELD_DEFAULTS = { toolsPolicy: "workspace-write", skillsPolicy: "default" };
+
+function presetFieldValue(field, source) {
+  const value = source?.[field];
+  if (value === undefined || value === null || value === "") return PRESET_FIELD_DEFAULTS[field];
+  return value;
+}
+
+export function presetForParticipant(participant) {
+  return participant?.preset ? getPreset(participant.preset) : null;
+}
+
+// True when the entry names a preset the catalog no longer carries (e.g. the GPT 5.5 presets
+// retired in 1.7.0). Those stay pinned to what they were created with — sync never touches them.
+export function isOrphanedPreset(participant) {
+  return Boolean(participant?.preset) && !getPreset(participant.preset);
+}
+
+export function presetDrift(participant) {
+  const preset = presetForParticipant(participant);
+  if (!preset) return [];
+  const changes = [];
+  for (const field of PRESET_OWNED_FIELDS) {
+    const from = presetFieldValue(field, participant);
+    const to = presetFieldValue(field, preset);
+    if (from !== to) changes.push({ field, from, to });
+  }
+  return changes;
+}
+
+export function syncParticipantWithPreset(participant) {
+  const changes = presetDrift(participant);
+  if (changes.length === 0) return { participant, changes };
+  const synced = { ...participant };
+  for (const { field, to } of changes) {
+    if (to === undefined) delete synced[field];
+    else synced[field] = to;
+  }
+  return { participant: synced, changes };
+}
+
+export function driftedParticipants(participants) {
+  return (participants ?? []).filter((participant) => presetDrift(participant).length > 0);
 }
 
 function stringOverride(value) {
