@@ -1,3 +1,9 @@
+> **Merged into [ngvoicu/consensflow](https://github.com/ngvoicu/consensflow) on 2026-08-20.**
+> This repository is archived. Its payload and engine now live in that repo
+> (`hosts/pi` and the shared `hosts/lib`), and it is installed
+> with `npm install -g ngvoicu/consensflow` then `consensflow install pi`.
+> History is kept here; changes happen there.
+
 # ConsensFlow Pi
 
 Ask other AI coding agents — **Claude Code, Codex, Pi, OpenCode** — for a second opinion, **one at a time, by name**, without leaving your Pi session.
