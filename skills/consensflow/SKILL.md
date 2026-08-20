@@ -68,7 +68,7 @@ Participants are configured in the shared roster `~/.consensflow/participants.js
                                                 # fully custom; read-write (workspace-write) by default
 ```
 
-Presets run read-write by default (`workspace-write`); the same model+effort family exists on every engine that runs it:
+Presets run read-write by default; the same model+effort family exists on every engine that runs it:
 
 - **Fable 5** (Anthropic's top model — use for the questions that really matter): `@calliope`/`@clio`/`@euterpe`/`@thalia` (Claude Code max/xhigh/high/medium), `@orpheus`/`@linus`/`@erato` (Pi xhigh/high/medium, Anthropic auth), `@saga`/`@gunnlod`/`@kvasir` (OpenCode xhigh/high/medium via OpenRouter).
 - **Opus 5**: `@zeus`/`@apollo`/`@artemis` (Claude Code max/xhigh/medium), `@kronos`/`@atlas` (Pi xhigh/medium, Anthropic auth), `@baldr`/`@vali` (OpenCode xhigh/medium via OpenRouter).
@@ -105,7 +105,6 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 /consensflow:participants [list|presets|add|show|remove|sync|add <…>]
 
 @name <prompt>                                            # ask — mention anywhere in the line
-/consensflow:cf @name <prompt> [--tools full-auto]      # explicit router; read-write by default, --tools full-auto to escalate
 ```
 
 ## Tools available to the lead
@@ -119,18 +118,14 @@ Pi exposes the same ConsensFlow slash commands as Claude Code:
 - `prompt` — the exact question/task for that participant.
 - `context` — optional focused brief added on top of the automatic session handoff.
 - `includeHandoff` — defaults to true; set false only when the participant should not see the current session snapshot.
-- `toolsPolicy` — optional per-call tools override: `workspace-write` (the default — confined to the project workspace) or `full-auto` (escalation that bypasses the engine's sandbox/approval checks). Omit it for the default `workspace-write`.
 
-## Tools policy: workspace-write (default) vs full-auto
 
 - **Default and presets:** `workspace-write` — read-write, confined to the project workspace, exactly like running the CLI yourself. They can plan, critique, explain, propose code, **and** edit files / run commands.
-- **`full-auto` is the only escalation:** create/update a participant with `--tools full-auto`, or pass `toolsPolicy: "full-auto"` / `/consensflow:cf @name <prompt> --tools full-auto` for one run, when the participant should bypass the engine's sandbox/approval checks.
 - **After any run:** inspect what changed yourself (`git status`, `git diff`, relevant tests as needed) — consulting is no longer sandboxed, so a consult can modify files. Summarize what the participant changed, give your recommendation, and wait for user approval before keeping/building on/committing the changes unless the user pre-authorized that exact action.
 
 ## Invariants
 
 - **One at a time.** Send to exactly one participant per call. Multiple leading `@mentions` are rejected; never fan out to several participants automatically. If the user names several, ask which one first, or ask one and wait for its answer before asking the next.
-- **Read-write by default.** A participant runs `workspace-write` (read, edit files, run commands within the project workspace) unless escalated to `full-auto` via `--tools full-auto` or `toolsPolicy: "full-auto"`. Consulting is not sandboxed: a consult can modify files, so inspect `git status` / `git diff` after a run.
 - **One-shot, no memory.** Each call is fresh. Continuity comes only from the handoff (re-sent each time), which already includes earlier `@participant` replies — so a later participant can build on an earlier one (cross-pollination). For a genuinely *independent* opinion, ask that participant **first**, before others have replied — otherwise its handoff carries the prior answers and colors it.
 - **Always run in the foreground — never in the background.** Run participant calls in the FOREGROUND, NEVER in the background or detached; the live reasoning/tool/answer trail streams automatically (no flag needed) — the only exception is an explicit `--json` for machine output. Every participant run streams its normalized thinking / tool-call / answer events into the Pi UI as it goes (via `cf_run_participant`'s `onUpdate`); this is structural — there is no flag or agent decision that can suppress it.
 - **The lead is always the decision-maker.** ConsensFlow routes a prompt and returns an answer; it never implements anything on its own. Acting on any answer goes through the gate above.

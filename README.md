@@ -20,7 +20,6 @@ The whole idea in five bullets:
 
 - **Participant** = a named *(agent + model)* combo. Configure once, reuse from any project.
 - **One at a time.** `@zeus @gaia …` is rejected — ask one, read, then ask the next.
-- **Read-write by default.** A participant runs like a standard CLI call — it can read, edit files, and run commands, confined to the project workspace (`workspace-write`). `--tools full-auto` is the only escalation, bypassing the engine's sandbox/approval checks.
 - **One-shot, but context-aware.** Each call is fresh (no memory of past calls), yet it always receives the current session handoff — *including earlier participants' answers* — so the 2nd agent you ask can build on the 1st.
 - **The lead can ask too — and asks before applying.** Pi will consult a participant on its own initiative when a second opinion would help, then report back and get your go-ahead before applying anything — unless you pre-authorized it (e.g. "get Zeus's take and apply what makes sense").
 
@@ -37,7 +36,7 @@ ConsensFlow sees exactly one @mention  →  intercepts the message
    ▼
 It builds a "packet" for @zeus:
    • who @zeus is        (claude-code · claude-opus-5 · max)
-   • tools line          (workspace-write by default — or full-auto if you escalated)
+   • tools line         
    • handoff             (a snapshot of THIS session + earlier @participant replies)
    • your question
    ▼
@@ -159,9 +158,9 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 5, a
 | `@odin` | opencode | `openrouter/deepseek/deepseek-v4-pro` | — |
 | `@helios` | pi | `openrouter/google/gemini-3.1-pro-preview` | high |
 | `@heimdall` | opencode | `openrouter/google/gemini-3.1-pro-preview` | high |
-| `@nike` | pi | `openrouter/google/gemini-3.6-flash` | low |
-| `@sif` | opencode | `openrouter/google/gemini-3.6-flash` | low |
-| `@prometheus` | pi | `openrouter/z-ai/glm-5.2` | high |
+| `@nike` | pi | `openrouter/google/gemini-3.7-flash` | low |
+| `@sif` | opencode | `openrouter/google/gemini-3.7-flash` | low |
+| `@prometheus` | pi | `openrouter/z-ai/glm-5.3` | high |
 | `@hyperion` | codex | `gpt-5.6-sol` | ultra |
 | `@phoebus` | codex | `gpt-5.6-sol` | xhigh |
 | `@aether` | pi | `openai-codex/gpt-5.6-sol` | xhigh |
@@ -172,8 +171,8 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 5, a
 | `@diana` | codex | `gpt-5.6-luna` | xhigh |
 | `@phoebe` | pi | `openai-codex/gpt-5.6-luna` | xhigh |
 | `@bil` | opencode | `openrouter/openai/gpt-5.6-luna` | xhigh |
-| `@ares` | pi | `openrouter/x-ai/grok-4.5` | high |
-| `@thor` | opencode | `openrouter/x-ai/grok-4.5` | — |
+| `@ares` | pi | `openrouter/x-ai/grok-4.6` | high |
+| `@thor` | opencode | `openrouter/x-ai/grok-4.6` | — |
 | `@endymion` | pi | `openrouter/moonshotai/kimi-k3` | xhigh |
 | `@mani` | opencode | `openrouter/moonshotai/kimi-k3` | — |
 | `@pan` | pi | `openrouter/meta-llama/llama-4-maverick` | high |
@@ -182,15 +181,14 @@ Sorted by model, then effort (strongest first). Claude Fable 5, Claude Opus 5, a
 | `@mimir` | opencode | `openrouter/minimax/minimax-m3` | — |
 | `@aeolus` | pi | `openrouter/mistralai/mistral-large-2512` | high |
 | `@njord` | opencode | `openrouter/mistralai/mistral-large-2512` | — |
-| `@hephaestus` | pi | `openrouter/qwen/qwen3.7-max` | high |
-| `@tyr` | opencode | `openrouter/qwen/qwen3.7-max` | — |
+| `@hephaestus` | pi | `openrouter/qwen/qwen3.8-max` | high |
+| `@tyr` | opencode | `openrouter/qwen/qwen3.8-max` | — |
 | `@pygmalion` | image (Codex backend) | `gpt-image-2` | — |
 
 Why some cells differ: `max` exists only on claude-code — pi's thinking scale and OpenRouter's effort scale both top out at `xhigh`, so that is the ceiling tier everywhere else. A `—` effort means the engine's catalog defines no effort variants for that model (it runs at the model's default reasoning).
 
 Note on Fable 5: it is Anthropic's most capable model, priced above Opus, with turns that can run several minutes at high effort — reach for `@calliope`/`@clio` when the question really matters, not for routine gut-checks.
 
-Auth, per row: Claude models on claude-code ride your Claude login; the `gpt-5.6-*` variants on codex — and their `openai-codex/...` twins on pi — ride your ChatGPT (Codex) login; `anthropic/...` on pi needs Anthropic auth set up in pi; every `openrouter/...` model needs an OpenRouter key in that engine. Presets run read-write by default (`workspace-write`, confined to the project workspace). Add `--tools full-auto` for one run that bypasses the engine's sandbox/approval checks.
 
 Add one, all, or a renamed copy:
 
@@ -210,14 +208,11 @@ The popular models already ship as presets (the tables above), so usually you ju
 /consensflow:participants add --name Sonnet --kind claude-code --model claude-sonnet-4-6 --effort high
 
 # Any OpenRouter model via Pi (reasoning via --thinking off | minimal | low | medium | high | xhigh)
-/consensflow:participants add --name PiGrok --kind pi --model openrouter/x-ai/grok-4.5 --thinking high
+/consensflow:participants add --name PiGrok --kind pi --model openrouter/x-ai/grok-4.6 --thinking high
 
-# A participant pinned to full-auto (OpenCode; effort maps to --variant)
 /consensflow:participants add --name Builder --kind opencode --model openrouter/moonshotai/kimi-k3 \
-    --effort max --tools full-auto
 ```
 
-> **Default vs full-auto.** By default a participant runs read-write, confined to the project workspace (`workspace-write`) — exactly like running the CLI yourself: it can read, edit files, and run commands. The only escalation is `--tools full-auto` (which bypasses the engine's sandbox/approval checks).
 
 ### Step 3 — Ask a participant
 
@@ -255,7 +250,6 @@ The reply appears inline in Pi. Every run is also saved under the ConsensFlow ho
 
 **Watch it work live:** ConsensFlow streams the participant's thinking, tool calls, and answer into Pi as they arrive — direct `@name` / `/consensflow:cf` calls appear as lightweight messages in the main session, and lead-initiated `cf_run_participant` calls stream via `onUpdate`. This streaming is automatic and always on (no flag needed); the only exception is an explicit `--json` for machine-readable output. Always run participant calls in the FOREGROUND, NEVER in the background (or detached) — it's a hard property of the tool — so the live reasoning/tool/answer trail can stream as it arrives. Every text-CLI run also writes `transcript.md` into the run dir as a durability backstop; if a run ends without a final answer you get the bounded trail under a clear header, never a raw event dump. cf never caps a run — runs are unbounded.
 
-A consult can modify files, so after a run review what changed yourself (e.g. `git status` / `git diff` in your repo) before keeping or building on it. **Per-call escalation:** pass `--tools full-auto` to `/consensflow:cf`, or give `cf_run_participant` a `toolsPolicy` of `full-auto`, to let only that run bypass the engine's sandbox/approval checks — no second roster entry needed.
 
 Then you, the lead, decide: implement all of it, some of it, or none.
 
@@ -315,8 +309,6 @@ The PNG is saved as `image.png` in the run dir and shown inline in Pi.
 /consensflow:participants [list|presets|add|show|remove|sync|add <…>]
 
 @name <prompt>                   # ask — mention anywhere in the line
-/consensflow:cf @name <prompt> [--tools full-auto]  # explicit router; read-write by default, full-auto to escalate
-/consensflow:cf ask @name <prompt> [--tools full-auto]
 ```
 
 Preset add flags: `--name`, `--id`, `--cwd`, `--description`.
@@ -327,7 +319,6 @@ Custom add also accepts: `--kind`, `--model`, `--provider`, `--effort` / `--thin
 ## Good to know
 
 - **One-shot:** participants don't remember previous calls. Continuity comes from the handoff (re-sent each time), which now includes earlier `@participant` answers — so a later participant sees an earlier one's reply. Great for debate; if you want a genuinely *independent* opinion, ask that participant **first**, before others have replied.
-- **Isolated, but read-write:** each participant runs in its own one-shot subprocess, started in your workspace; a `--cwd` that escapes it is rejected before launch (realpath-checked). By default it runs read-write, confined to that workspace (`workspace-write`) — exactly like running the CLI yourself, so a consult can read, edit files, and run commands. Treat it as a standard CLI call, not a hard sandbox: `--tools full-auto` removes even the workspace confinement and the engine's approval checks. Pi participants run with `--no-extensions` so ConsensFlow can't recurse into itself.
 - **You're always the lead.** ConsensFlow routes your question and shows you the answer — it never implements or keeps anything on its own. The lead consults freely, but summarizes a participant's response (or any file edits it made) and asks before keeping or building on it, unless you've already told it to proceed.
 
 ---

@@ -21,7 +21,7 @@ import {
   upsertParticipant,
 } from "./extensions/consensflow/lib/state.js";
 import { createId, parseOptions, parseParticipantPrompt, slugify, tokenize } from "./extensions/consensflow/lib/utils.js";
-import { effectiveToolsPolicy, runNamedParticipant } from "./extensions/consensflow/lib/workflows.js";
+import { runNamedParticipant } from "./extensions/consensflow/lib/workflows.js";
 import { renderEvent } from "./extensions/consensflow/lib/transcript-events.js";
 
 const EXT = "consensflow";
@@ -68,7 +68,6 @@ export default async function consensflow(pi: ExtensionAPI) {
       prompt: Type.String({ description: "Natural-language request for that participant" }),
       context: Type.Optional(Type.String({ description: "Optional focused note/brief added on top of the auto-included session handoff." })),
       includeHandoff: Type.Optional(Type.Boolean({ description: "Attach the current session transcript as context. Defaults to true." })),
-      toolsPolicy: Type.Optional(Type.String({ description: "Per-call override: 'workspace-write' (the default) or 'full-auto' (bypass the workspace sandbox). Defaults to the participant's stored policy." })),
       images: Type.Optional(Type.Array(Type.String(), { description: "Image-participant only (kind=image): file paths to reference images (.png/.jpg/.jpeg/.webp/.gif) for gpt-image-2 to edit/condition on. Ignored by text participants." })),
     }),
     async execute(_toolCallId, params, signal, onUpdate, ctx) {
@@ -97,7 +96,6 @@ export default async function consensflow(pi: ExtensionAPI) {
         handoff,
         extraContext: params.context,
         signal,
-        toolsPolicy: params.toolsPolicy,
         // Stream the participant's normalized thinking / tool calls / answer into the Pi UI as it
         // arrives — the pi analog of cc's always-on streaming (foreground-incremental observability).
         onEvent: (event: any) => {
@@ -323,7 +321,7 @@ async function handleParticipants(tokens: string[], ctx: any, pi: ExtensionAPI) 
     }
 
     if (presetRef) {
-      throw new Error(`Unknown preset: ${presetRef}\n\nPresets: ${listPresetIds().join(", ")} (rename any with --name).\n\nOr create a custom participant:\n  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--tools <workspace-write|full-auto>]`);
+      throw new Error(`Unknown preset: ${presetRef}\n\nPresets: ${listPresetIds().join(", ")} (rename any with --name).\n\nOr create a custom participant:\n  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>]`);
     }
     throw new Error(addUsage());
   }
@@ -346,7 +344,6 @@ async function handleParticipantPrompt(parsed: ParticipantPrompt, ctx: any, pi: 
     extraContext: parsed.context,
     handoff,
     signal,
-    toolsPolicy: parsed.toolsPolicy,
     // Direct @mention and /consensflow:cf runs should be visible in the main session too, not
     // just as a final answer after a long child process. Stream the normalized trail as
     // lightweight custom messages; handoff serialization ignores these stream crumbs and keeps
@@ -429,7 +426,7 @@ function collectHandoff(ctx: any): string {
 }
 
 type ParticipantPrompt =
-  | { participant: string; prompt: string; error?: undefined; context?: string; includeHandoff?: boolean; toolsPolicy?: string; images?: string[] }
+  | { participant: string; prompt: string; error?: undefined; context?: string; includeHandoff?: boolean; images?: string[] }
   | { participant?: undefined; prompt?: undefined; error: string };
 
 // Tokenize a typed line and decide whether it addresses one participant. When the line contains
@@ -449,13 +446,11 @@ function parseRunPrompt(tokens: string[], known: Set<string>): ParticipantPrompt
   const parsed = parseRunOptions(tokens);
   const prompt = parseParticipantPrompt(parsed.positional, known) as ParticipantPrompt | null;
   if (!prompt || prompt.error) return prompt;
-  const toolsPolicy = parsed.flags.rw === true ? "workspace-write" : stringFlag(parsed.flags.tools ?? parsed.flags.toolsPolicy);
   const images = Array.isArray(parsed.flags.image) ? (parsed.flags.image as string[]) : undefined;
   return {
     ...prompt,
     context: stringFlag(parsed.flags.context),
     includeHandoff: flagBool(parsed.flags, "handoff") ?? true,
-    toolsPolicy,
     images,
   };
 }
@@ -463,7 +458,7 @@ function parseRunPrompt(tokens: string[], known: Set<string>): ParticipantPrompt
 function parseRunOptions(tokens: string[]) {
   const positional: string[] = [];
   const flags: Record<string, unknown> = {};
-  const valueFlags = new Set(["tools", "toolsPolicy", "context", "image"]);
+  const valueFlags = new Set(["context", "image"]);
   const booleanFlags = new Set(["rw", "handoff", "no-handoff"]);
   // Repeatable flags collect into an array: `--image a.png --image b.png` → ["a.png", "b.png"].
   const multiValueFlags = new Set(["image"]);
@@ -515,8 +510,8 @@ async function knownParticipantKeys(cwd: string): Promise<Set<string>> {
 }
 
 const PRESET_OVERRIDE_FLAGS = ["name", "id", "cwd", "description"];
-const CUSTOM_ADD_FLAGS = ["name", "id", "kind", "model", "provider", "effort", "thinking", "tools", "toolsPolicy", "skills", "skillsPolicy", "agent", "cwd", "maxTurns", "description"];
-const CUSTOM_SHAPE_FLAGS = ["kind", "model", "provider", "effort", "thinking", "tools", "toolsPolicy", "skills", "skillsPolicy", "agent", "maxTurns"];
+const CUSTOM_ADD_FLAGS = ["name", "id", "kind", "model", "provider", "effort", "thinking", "skills", "skillsPolicy", "agent", "cwd", "maxTurns", "description"];
+const CUSTOM_SHAPE_FLAGS = ["kind", "model", "provider", "effort", "thinking", "skills", "skillsPolicy", "agent", "maxTurns"];
 
 function assertAllowedFlags(flags: Record<string, unknown>, allowed: string[], context: string) {
   const allowedSet = new Set(allowed);
@@ -557,7 +552,6 @@ function customParticipantInput(name: string, flags: Record<string, unknown>) {
     provider: flags.provider,
     effort: flags.effort,
     thinking: flags.thinking,
-    toolsPolicy: flags.tools ?? flags.toolsPolicy,
     skillsPolicy: flags.skills ?? flags.skillsPolicy,
     agent: flags.agent,
     cwd: flags.cwd,
@@ -571,7 +565,7 @@ function addUsage() {
     "Usage:",
     "  /consensflow:participants add <preset> [--name <name>]        # from a preset, optionally renamed",
     "  /consensflow:participants add all                              # every preset",
-    "  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--thinking <t>] [--tools <workspace-write|full-auto>] [--cwd <subdir>]",
+    "  /consensflow:participants add --name <name> --kind <pi|claude-code|codex|opencode|image> --model <model> [--effort <e>] [--thinking <t>] [--cwd <subdir>]",
     "",
     `Presets: ${listPresetIds().join(", ")}`,
   ].join("\n");
@@ -596,7 +590,7 @@ function formatParticipants(participants: any[], cwd = process.cwd()) {
       "/consensflow:participants add zeus                      # add a preset",
       "/consensflow:participants add zeus --name Deepreview    # preset backend, custom name",
       "/consensflow:participants add all                       # every preset",
-      "/consensflow:participants add --name Builder --kind codex --model gpt-5.6-sol --tools workspace-write",
+      "/consensflow:participants add --name Builder --kind codex --model gpt-5.6-sol",
       "```",
     ].join("\n");
   }
@@ -642,10 +636,7 @@ function formatParticipantLine(p: any) {
   const cwd = p.cwd ? ` cwd=${p.cwd}` : "";
   const skills = p.kind === "pi" ? ` skills=${p.skillsPolicy ?? "default"}` : "";
   const preset = p.preset ? ` preset=${p.preset}` : "";
-  // workspace-write is the quiet default; only surface the explicit full-auto escalation.
-  const policy = effectiveToolsPolicy(p);
-  const access = policy === "full-auto" ? ` access=full-auto` : "";
-  const head = `- @${p.id} (${p.kind}${model}${effort}${cwd}${skills}${preset})${access}`;
+  const head = `- @${p.id} (${p.kind}${model}${effort}${cwd}${skills}${preset})`;
   return p.description ? `${head}\n    ${p.description}` : head;
 }
 
@@ -701,8 +692,7 @@ Ask a participant:
 \`\`\`text
 @zeus What do you think about this approach?                          # bare mention
 /consensflow:cf @zeus What do you think about this approach?          # explicit router
-/consensflow:cf @builder Make the minimal fix --rw                    # per-call write
-/consensflow:cf @builder Make the minimal fix --tools workspace-write  # per-call write
+/consensflow:cf @builder Make the minimal fix  # per-call write
 \`\`\`
 
 Add participants (shared across Pi and Claude Code, ${participantsPath(process.cwd())}):
@@ -713,7 +703,7 @@ Add participants (shared across Pi and Claude Code, ${participantsPath(process.c
 /consensflow:participants add zeus --name Deepreview    # preset backend, your own name -> @deepreview
 /consensflow:participants add all                       # every preset
 /consensflow:participants add --name Builder --kind codex --model gpt-5.6-sol --effort high \\
-    --tools workspace-write                             # fully custom, write-capable
+                                # fully custom, write-capable
 \`\`\`
 
 Admin commands:
@@ -726,7 +716,6 @@ Admin commands:
 Rules:
 
 - Send to one participant at a time.
-- Participants run as standard read-write CLI calls (workspace-write by default) — like running the CLI yourself, they can edit files and run commands. \`--tools full-auto\` escalates to bypass the workspace sandbox.
 - One-shot: participants do not remember previous calls; each call re-sends the current session handoff.
 - New participants are addressed with \`@name\` or \`/consensflow:cf @name …\`; no per-participant slash commands are registered.
 - The current Pi session remains the lead and decides what to implement.

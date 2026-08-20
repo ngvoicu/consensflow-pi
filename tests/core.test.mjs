@@ -6,9 +6,8 @@ import test from "node:test";
 import { createPacket } from "../extensions/consensflow/lib/packets.js";
 import { driftedParticipants, getPreset, listPresetIds, PARTICIPANT_PRESETS, participantFromPreset, PRESET_OWNED_FIELDS } from "../extensions/consensflow/lib/presets.js";
 import { serializeTranscript } from "../extensions/consensflow/lib/handoff.js";
-import { buildRunnerInvocation, codexSandbox, normalizeProcessOutput, runParticipant, spawnWithInput, toolsForPi } from "../extensions/consensflow/lib/runners.js";
+import { buildRunnerInvocation, normalizeProcessOutput, runParticipant, spawnWithInput, toolsForPi } from "../extensions/consensflow/lib/runners.js";
 import { configRoot, getParticipant, loadParticipants, normalizeParticipant, participantsPath, removeParticipant, syncParticipantsWithPresets, upsertParticipant } from "../extensions/consensflow/lib/state.js";
-import { effectiveToolsPolicy, participantForKind } from "../extensions/consensflow/lib/workflows.js";
 import { parseOptions, parseParticipantPrompt, resolveInside, slugify, tokenize } from "../extensions/consensflow/lib/utils.js";
 import { buildImageRequestBody, decodeChatGptAccountId, extractImageFromEvents, imageFileToDataUrl, saveImagePng } from "../extensions/consensflow/lib/image.js";
 
@@ -58,7 +57,6 @@ test("participant CRUD persists global user-level JSON", async () => {
       kind: "codex",
       model: "gpt-5.5",
       effort: "xhigh",
-      toolsPolicy: "workspace-write",
     });
     assert.equal(athena.id, "athena");
     assert.equal((await getParticipant(cwd, "@athena")).model, "gpt-5.5");
@@ -74,7 +72,6 @@ test("createPacket is conversational, mode-aware, and carries handoff + diff", a
       name: "Zeus",
       kind: "pi",
       model: "openrouter/anthropic/claude-opus-4.7",
-      toolsPolicy: "workspace-write",
     });
     const packet = await createPacket({
       cwd,
@@ -101,7 +98,6 @@ test("createPacket gives write-capable participants a read-write mode line", asy
     const participant = await upsertParticipant(cwd, {
       name: "Builder",
       kind: "claude-code",
-      toolsPolicy: "workspace-write",
     });
     const packet = await createPacket({ cwd, participant, kind: "ask", task: "add a health check endpoint" });
     assert.match(packet, /Read-write: you can read and modify this workspace/);
@@ -177,13 +173,13 @@ test("participant presets expose the allowed creation list", () => {
   assert.equal(getPreset("mani").model, "openrouter/moonshotai/kimi-k3");
   assert.equal(getPreset("mani").kind, "opencode");
   // Grok and Gemini Flash track the current generation too (4.3 -> 4.5, 3.5 -> 3.6).
-  assert.equal(getPreset("ares").model, "openrouter/x-ai/grok-4.5");
-  assert.equal(getPreset("thor").model, "openrouter/x-ai/grok-4.5");
-  assert.equal(getPreset("nike").model, "openrouter/google/gemini-3.6-flash");
-  assert.equal(getPreset("sif").model, "openrouter/google/gemini-3.6-flash");
-  // GLM 5.2 on pi (Greek model zoo, high thinking).
+  assert.equal(getPreset("ares").model, "openrouter/x-ai/grok-4.6");
+  assert.equal(getPreset("thor").model, "openrouter/x-ai/grok-4.6");
+  assert.equal(getPreset("nike").model, "openrouter/google/gemini-3.7-flash");
+  assert.equal(getPreset("sif").model, "openrouter/google/gemini-3.7-flash");
+  // GLM 5.3 on pi (Greek model zoo, high thinking).
   assert.equal(getPreset("prometheus").kind, "pi");
-  assert.equal(getPreset("prometheus").model, "openrouter/z-ai/glm-5.2");
+  assert.equal(getPreset("prometheus").model, "openrouter/z-ai/glm-5.3");
   assert.equal(getPreset("prometheus").thinking, "high");
   assert.equal(getPreset("heimdall").effort, "high");
   assert.equal(getPreset("sif").effort, "low");
@@ -229,7 +225,6 @@ test("every preset survives normalize + runner invocation with correct flags (al
     assert.equal(participant.id, preset.id, `${preset.preset}: id survives the pipeline`);
     assert.equal(participant.kind, preset.kind, `${preset.preset}: kind`);
     assert.equal(participant.model, preset.model, `${preset.preset}: model`);
-    assert.equal(effectiveToolsPolicy(participant), "workspace-write", `${preset.preset}: presets are workspace-write`);
 
     if (preset.kind === "image") {
       assert.throws(() => buildRunnerInvocation(participant, "/tmp/packet.md", "/repo"), /image participants/);
@@ -263,16 +258,14 @@ test("every preset survives normalize + runner invocation with correct flags (al
 
 test("runner invocation maps tool policies", () => {
   assert.equal(toolsForPi(), "read,grep,find,ls,bash,edit,write"); // pi always full tools (no read-only bash sandbox)
-  assert.equal(codexSandbox("workspace-write"), "workspace-write");
-  assert.equal(codexSandbox("full-auto"), "danger-full-access");
-  const pi = buildRunnerInvocation({ kind: "pi", model: "openrouter/moonshotai/kimi-k3", toolsPolicy: "workspace-write", skillsPolicy: "default" }, "/tmp/packet.md", "/repo");
+  const pi = buildRunnerInvocation({ kind: "pi", model: "openrouter/moonshotai/kimi-k3", skillsPolicy: "default" }, "/tmp/packet.md", "/repo");
   assert.equal(pi.command, "pi");
   assert.deepEqual(pi.args.slice(0, 6), ["--mode", "json", "--no-session", "--no-extensions", "--model", "openrouter/moonshotai/kimi-k3"]);
   assert.ok(pi.args.includes("off"));
   assert.equal(pi.args.includes("--no-skills"), false);
-  const sterilePi = buildRunnerInvocation({ kind: "pi", toolsPolicy: "workspace-write", skillsPolicy: "none" }, "/tmp/packet.md", "/repo");
+  const sterilePi = buildRunnerInvocation({ kind: "pi", skillsPolicy: "none" }, "/tmp/packet.md", "/repo");
   assert.ok(sterilePi.args.includes("--no-skills"));
-  const codex = buildRunnerInvocation({ kind: "codex", model: "gpt-5.5", effort: "xhigh", toolsPolicy: "workspace-write" }, "/tmp/packet.md", "/repo");
+  const codex = buildRunnerInvocation({ kind: "codex", model: "gpt-5.5", effort: "xhigh" }, "/tmp/packet.md", "/repo");
   assert.equal(codex.command, "codex");
   assert.ok(codex.args.includes("workspace-write"));
   assert.ok(codex.args.includes("--ephemeral"));
@@ -282,29 +275,31 @@ test("runner invocation maps tool policies", () => {
   assert.ok(codex.args.includes("model_reasoning_effort=\"xhigh\""));
 });
 
-test("every engine runs read-write by default; full-auto reaches the danger flags", () => {
-  // Claude: full tools, no deny list (no read-only tier anymore).
-  const claude = buildRunnerInvocation({ kind: "claude-code", toolsPolicy: "workspace-write" }, "/tmp/packet.md", "/repo");
+test("every engine runs read-write with its own CLI defaults; no bypass flag is ever passed", () => {
+  // Claude: full tools, no deny list (no read-only tier, no danger tier).
+  const claude = buildRunnerInvocation({ kind: "claude-code" }, "/tmp/packet.md", "/repo");
   const allowIdx = claude.args.indexOf("--allowedTools");
   assert.match(claude.args[allowIdx + 1], /Edit/);
   assert.match(claude.args[allowIdx + 1], /Bash/);
   assert.equal(claude.args.includes("--disallowedTools"), false);
+  // Regression guard (1.5.1): --bare forbids OAuth/keychain auth while ANTHROPIC_API_KEY is
+  // stripped -> "Not logged in". Recursion/stomp is guarded by CONSENSFLOW_CHILD alone.
+  assert.ok(!claude.args.includes("--bare"));
   assert.ok(claude.args.includes("--no-session-persistence"));
-  const claudeAuto = buildRunnerInvocation({ kind: "claude-code", toolsPolicy: "full-auto" }, "/tmp/packet.md", "/repo");
-  assert.ok(claudeAuto.args.includes("--dangerously-skip-permissions"));
 
-  // Codex: workspace-write sandbox by default; full-auto bypasses it.
-  const codex = buildRunnerInvocation({ kind: "codex", toolsPolicy: "workspace-write" }, "/tmp/packet.md", "/repo");
+  // Codex: always the workspace sandbox.
+  const codex = buildRunnerInvocation({ kind: "codex" }, "/tmp/packet.md", "/repo");
   assert.ok(codex.args.includes("workspace-write"));
-  const codexAuto = buildRunnerInvocation({ kind: "codex", toolsPolicy: "full-auto" }, "/tmp/packet.md", "/repo");
-  assert.ok(codexAuto.args.includes("--dangerously-bypass-approvals-and-sandbox"));
 
-  // OpenCode: no permission overlay (it uses its own edit/bash allow); full-auto skips permissions.
-  const opencode = buildRunnerInvocation({ kind: "opencode", toolsPolicy: "workspace-write" }, "/tmp/packet.md", "/repo");
+  // OpenCode: no permission overlay (it uses its own edit/bash allow).
+  const opencode = buildRunnerInvocation({ kind: "opencode" }, "/tmp/packet.md", "/repo");
   assert.equal(opencode.env?.OPENCODE_PERMISSION, undefined);
-  const opencodeAuto = buildRunnerInvocation({ kind: "opencode", toolsPolicy: "full-auto" }, "/tmp/packet.md", "/repo");
-  assert.ok(opencodeAuto.args.includes("--dangerously-skip-permissions"));
 
+  // The permission concept is gone: no engine may receive a bypass flag.
+  for (const kind of ["pi", "claude-code", "codex", "opencode"]) {
+    const invocation = buildRunnerInvocation({ kind }, "/tmp/packet.md", "/repo");
+    assert.equal(invocation.args.some((a) => String(a).includes("--dangerously")), false, `${kind}: no bypass flag`);
+  }
   // Billing guard: participant runs ride the configured logins, not a stray env API key.
   assert.deepEqual(claude.dropEnv, ["ANTHROPIC_API_KEY"]);
   assert.deepEqual(codex.dropEnv, ["OPENAI_API_KEY"]);
@@ -316,6 +311,19 @@ test("spawnWithInput survives a child that exits without reading stdin (EPIPE)",
   const result = await spawnWithInput("true", [], { input: "x".repeat(5 * 1024 * 1024), timeoutMs: 10_000 });
   assert.equal(result.exitCode, 0);
   assert.equal(result.timedOut, false);
+});
+
+test("spawnWithInput strips the cmux control-socket env from every child, even when passed as an override", async () => {
+  // CMUX_SOCKET_CAPABILITY is a bearer token that can type into any cmux pane; no child may hold it.
+  const probe = 'process.stdout.write(JSON.stringify({ cap: process.env.CMUX_SOCKET_CAPABILITY ?? null, bin: process.env.CMUX_CLAUDE_HOOK_CMUX_BIN ?? null, keep: process.env.CONSENSFLOW_TEST_KEEP ?? null }))';
+  const result = await spawnWithInput(process.execPath, ["-e", probe], {
+    timeoutMs: 10_000,
+    env: { CMUX_SOCKET_CAPABILITY: "leak-test", CMUX_CLAUDE_HOOK_CMUX_BIN: "leak-test", CONSENSFLOW_TEST_KEEP: "kept" },
+  });
+  const seen = JSON.parse(result.stdout);
+  assert.equal(seen.cap, null, "cmux socket token must never reach a child");
+  assert.equal(seen.bin, null, "cmux hook binary path must never reach a child");
+  assert.equal(seen.keep, "kept", "unrelated env overrides still pass through");
 });
 
 test("spawnWithInput with timeoutMs:0 arms no timer — a child that runs past 0ms completes normally, not timed out", async () => {
@@ -356,42 +364,14 @@ test("spawnWithInput streams complete stdout lines via onStdoutLine: carry acros
   });
 });
 
-test("toolsPolicy defaults to workspace-write; explicit policies honored, readonly + bogus rejected", () => {
-  // Explicit write policies are honored as configured.
-  const builder = { id: "builder", name: "Builder", kind: "claude-code", toolsPolicy: "workspace-write" };
-  assert.equal(effectiveToolsPolicy(builder), "workspace-write");
-  assert.equal(participantForKind(builder, "ask").toolsPolicy, "workspace-write");
-  assert.equal(effectiveToolsPolicy({ id: "auto", name: "Auto", kind: "codex", toolsPolicy: "full-auto" }), "full-auto");
-
-  // A missing policy defaults to workspace-write (participants run as standard read-write CLI calls).
-  const bare = { id: "bare", name: "Bare", kind: "codex" };
-  assert.equal(effectiveToolsPolicy(bare), "workspace-write");
-  assert.equal(participantForKind(bare, "ask").toolsPolicy, "workspace-write");
-
-  // normalizeParticipant defaults an omitted policy to workspace-write, and rejects readonly + bogus values.
+test("a participant carries no permission field at all", () => {
+  // The permission concept was removed 2026-08-20: participants run with the
+  // engine CLI's own defaults, so there is nothing to store and nothing to
+  // escalate. A legacy value on an old roster row is simply not read.
   const p = normalizeParticipant({ name: "Y", kind: "codex" });
-  assert.equal(p.toolsPolicy, "workspace-write");
-  assert.throws(() => normalizeParticipant({ name: "Z", kind: "codex", toolsPolicy: "readonly" }), /toolsPolicy must be one of/);
-  assert.throws(() => normalizeParticipant({ name: "X", kind: "codex", toolsPolicy: "bogus" }), /toolsPolicy must be one of/);
-});
-
-test("participantForKind honors an explicit per-call tools override (one participant) [STRM-23]", () => {
-  const ws = { id: "ws", name: "WS", kind: "pi", toolsPolicy: "workspace-write" };
-  // No override → the stored default is kept.
-  assert.equal(participantForKind(ws, "ask").toolsPolicy, "workspace-write");
-  assert.equal(participantForKind(ws, "ask", undefined).toolsPolicy, "workspace-write");
-  assert.equal(participantForKind(ws, "ask", "").toolsPolicy, "workspace-write");
-  // A valid override wins over the stored policy — escalating to full-auto.
-  assert.equal(participantForKind(ws, "ask", "full-auto").toolsPolicy, "full-auto");
-  const auto = { id: "auto", name: "Auto", kind: "codex", toolsPolicy: "full-auto" };
-  assert.equal(participantForKind(auto, "ask", "workspace-write").toolsPolicy, "workspace-write");
-  // No stored policy + no override → workspace-write default preserved.
-  assert.equal(participantForKind({ id: "bare", name: "B", kind: "codex" }, "ask").toolsPolicy, "workspace-write");
-  // An invalid override throws (readonly is gone; never silently grants the wrong capability).
-  assert.throws(() => participantForKind(ws, "ask", "readonly"), /tools/i);
-  assert.throws(() => participantForKind(ws, "ask", "bogus"), /tools/i);
-  // The stored participant object is never mutated by an override.
-  assert.equal(ws.toolsPolicy, "workspace-write");
+  assert.equal(p.toolsPolicy, undefined);
+  const legacy = normalizeParticipant({ name: "Z", kind: "codex", toolsPolicy: "full-auto" });
+  assert.equal(legacy.toolsPolicy, undefined);
 });
 
 test("participantsPath and artifact root live directly under the shared ConsensFlow home [STRM-27]", async () => {
@@ -413,13 +393,13 @@ test("legacy per-tool participant files migrate once when the shared root file i
     await mkdir(path.join(home, "consensflow-pi"), { recursive: true });
     await writeFile(
       path.join(home, "consensflow-pi", "participants.json"),
-      JSON.stringify({ schemaVersion: 1, participants: [{ id: "pi-only", name: "Pi Only", kind: "pi", toolsPolicy: "workspace-write" }] }),
+      JSON.stringify({ schemaVersion: 1, participants: [{ id: "pi-only", name: "Pi Only", kind: "pi" }] }),
       "utf8",
     );
     await mkdir(path.join(home, "consensflow-cc"), { recursive: true });
     await writeFile(
       path.join(home, "consensflow-cc", "participants.json"),
-      JSON.stringify({ schemaVersion: 1, participants: [{ id: "cc-only", name: "CC Only", kind: "claude-code", toolsPolicy: "workspace-write" }] }),
+      JSON.stringify({ schemaVersion: 1, participants: [{ id: "cc-only", name: "CC Only", kind: "claude-code" }] }),
       "utf8",
     );
 
@@ -431,7 +411,7 @@ test("legacy per-tool participant files migrate once when the shared root file i
     // After the shared file exists, legacy files are ignored; root remains authoritative.
     await writeFile(
       path.join(home, "consensflow-cc", "participants.json"),
-      JSON.stringify({ schemaVersion: 1, participants: [{ id: "ghost", name: "Ghost", kind: "codex", toolsPolicy: "workspace-write" }] }),
+      JSON.stringify({ schemaVersion: 1, participants: [{ id: "ghost", name: "Ghost", kind: "codex" }] }),
       "utf8",
     );
     assert.equal(await getParticipant(cwd, "@ghost"), null);
@@ -446,7 +426,7 @@ test("runParticipant rejects participant cwd that escapes workspace before spawn
     await assert.rejects(
       runParticipant({
         cwd,
-        participant: { id: "bad", name: "Bad", kind: "pi", toolsPolicy: "workspace-write", cwd: "../outside" },
+        participant: { id: "bad", name: "Bad", kind: "pi", cwd: "../outside" },
         packet: "# Packet",
         kind: "ask",
       }),
@@ -913,8 +893,6 @@ test("docs describe the stream-first observability surface, transcript backstop,
   // Durability backstop + the new parity-locked event module.
   assert.match(docs, /transcript\.md/, "docs mention the transcript.md backstop");
   assert.match(docs, /transcript-events\.js/, "docs mention the parity-locked event module");
-  // The two config additions (pi exposes the override as a toolsPolicy option).
-  assert.match(docs, /toolsPolicy/, "docs mention the per-call toolsPolicy override");
   assert.match(docs, /shared/i, "docs mention the shared cross-tool roster");
   // The runners.js mirrored-with-deltas convention.
   assert.match(agents, /mirror/i, "AGENTS.md documents the runners.js mirrored-with-deltas convention");

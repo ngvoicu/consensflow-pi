@@ -13,7 +13,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-fable-5",
     effort: "max",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "clio",
@@ -24,7 +23,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-fable-5",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "euterpe",
@@ -35,7 +33,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-fable-5",
     effort: "high",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "thalia",
@@ -46,7 +43,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-fable-5",
     effort: "medium",
-    toolsPolicy: "workspace-write",
   },
 
   // --- GPT 5.6 celestial trio (Codex) --------------------------------------
@@ -62,7 +58,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "codex",
     model: "gpt-5.6-sol",
     effort: "ultra",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "phoebus",
@@ -73,7 +68,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "codex",
     model: "gpt-5.6-sol",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "gaia",
@@ -84,7 +78,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "codex",
     model: "gpt-5.6-terra",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "diana",
@@ -95,7 +88,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "codex",
     model: "gpt-5.6-luna",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
 
   // --- GPT 5.6 on the other engines that reach it --------------------------
@@ -112,7 +104,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "pi",
     model: "openai-codex/gpt-5.6-sol",
     thinking: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "rhea",
@@ -123,7 +114,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "pi",
     model: "openai-codex/gpt-5.6-terra",
     thinking: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "phoebe",
@@ -134,7 +124,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "pi",
     model: "openai-codex/gpt-5.6-luna",
     thinking: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "sunna",
@@ -145,7 +134,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/openai/gpt-5.6-sol",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "jord",
@@ -156,7 +144,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/openai/gpt-5.6-terra",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "bil",
@@ -167,7 +154,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/openai/gpt-5.6-luna",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
 
   // --- House team: strong default participants per engine --------------------
@@ -180,7 +166,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-opus-5",
     effort: "max",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "apollo",
@@ -191,7 +176,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-opus-5",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "artemis",
@@ -202,7 +186,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-opus-5",
     effort: "medium",
-    toolsPolicy: "workspace-write",
   },
 
   // --- Frontier models on the other engines that run them ------------------
@@ -217,7 +200,6 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-fable-5",
     thinking: "xhigh",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "linus",
@@ -229,7 +211,6 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-fable-5",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "erato",
@@ -241,7 +222,6 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-fable-5",
     thinking: "medium",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "saga",
@@ -252,7 +232,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-fable-5",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "gunnlod",
@@ -263,7 +242,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-fable-5",
     effort: "high",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "kvasir",
@@ -274,7 +252,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-fable-5",
     effort: "medium",
-    toolsPolicy: "workspace-write",
   },
   // Opus 5 on pi (anthropic provider). pi's model layer gained a "max" thinking level in
   // @earendil-works/pi-ai 0.82 (verified in its registry: claude-opus-5 maps xhigh AND max),
@@ -290,7 +267,6 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-opus-5",
     thinking: "xhigh",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "atlas",
@@ -302,7 +278,6 @@ export const PARTICIPANT_PRESETS = [
     model: "anthropic/claude-opus-5",
     thinking: "medium",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   // Opus 5 on OpenCode (via OpenRouter). Unlike the 4.8 generation there is no dotted id:
   // it is plainly anthropic/claude-opus-5. Kept at the xhigh/medium tiers the 4.8 pair used.
@@ -315,7 +290,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-opus-5",
     effort: "xhigh",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "vali",
@@ -326,7 +300,6 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/anthropic/claude-opus-5",
     effort: "medium",
-    toolsPolicy: "workspace-write",
   },
   // GPT 5.5 on OpenCode (via OpenRouter).
 
@@ -340,19 +313,17 @@ export const PARTICIPANT_PRESETS = [
     kind: "claude-code",
     model: "claude-haiku-4-5",
     effort: "low",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "nike",
     id: "nike",
     name: "Nike",
-    label: "Pi Gemini 3.6 Flash (fast)",
-    description: "Swift, cheap Pi-backed Gemini 3.6 Flash for quick second opinions.",
+    label: "Pi Gemini 3.7 Flash (fast)",
+    description: "Swift, cheap Pi-backed Gemini 3.7 Flash for quick second opinions.",
     kind: "pi",
-    model: "openrouter/google/gemini-3.6-flash",
+    model: "openrouter/google/gemini-3.7-flash",
     thinking: "low",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "freya",
@@ -362,7 +333,6 @@ export const PARTICIPANT_PRESETS = [
     description: "Cheap, fast OpenCode-backed DeepSeek V4 Flash (via OpenRouter).",
     kind: "opencode",
     model: "openrouter/deepseek/deepseek-v4-flash",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "zephyros",
@@ -374,18 +344,16 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/deepseek/deepseek-v4-flash",
     thinking: "low",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "sif",
     id: "sif",
     name: "Sif",
-    label: "OpenCode Gemini 3.6 Flash (fast)",
-    description: "Swift, cheap OpenCode-backed Gemini 3.6 Flash at low variant (via OpenRouter).",
+    label: "OpenCode Gemini 3.7 Flash (fast)",
+    description: "Swift, cheap OpenCode-backed Gemini 3.7 Flash at low variant (via OpenRouter).",
     kind: "opencode",
-    model: "openrouter/google/gemini-3.6-flash",
+    model: "openrouter/google/gemini-3.7-flash",
     effort: "low",
-    toolsPolicy: "workspace-write",
   },
 
   // --- pi model zoo (Greek names) — popular OpenRouter models via Pi -------
@@ -399,7 +367,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/deepseek/deepseek-v4-pro",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "helios",
@@ -411,31 +378,28 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/google/gemini-3.1-pro-preview",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "ares",
     id: "ares",
     name: "Ares",
-    label: "Pi Grok 4.5",
-    description: "Pi-backed xAI Grok 4.5 participant (via OpenRouter).",
+    label: "Pi Grok 4.6",
+    description: "Pi-backed xAI Grok 4.6 participant (via OpenRouter).",
     kind: "pi",
-    model: "openrouter/x-ai/grok-4.5",
+    model: "openrouter/x-ai/grok-4.6",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "hephaestus",
     id: "hephaestus",
     name: "Hephaestus",
-    label: "Pi Qwen3.7 Max",
-    description: "Pi-backed Qwen3.7 Max participant (via OpenRouter).",
+    label: "Pi Qwen3.8 Max",
+    description: "Pi-backed Qwen3.8 Max participant (via OpenRouter).",
     kind: "pi",
-    model: "openrouter/qwen/qwen3.7-max",
+    model: "openrouter/qwen/qwen3.8-max",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "pan",
@@ -447,7 +411,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/meta-llama/llama-4-maverick",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "aeolus",
@@ -459,7 +422,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/mistralai/mistral-large-2512",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "metis",
@@ -471,19 +433,17 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/minimax/minimax-m3",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "prometheus",
     id: "prometheus",
     name: "Prometheus",
-    label: "Pi GLM 5.2",
-    description: "Pi-backed Zhipu GLM 5.2 participant (via OpenRouter); the Titan who brought knowledge to mortals.",
+    label: "Pi GLM 5.3",
+    description: "Pi-backed Zhipu GLM 5.3 participant (via OpenRouter); the Titan who brought knowledge to mortals.",
     kind: "pi",
-    model: "openrouter/z-ai/glm-5.2",
+    model: "openrouter/z-ai/glm-5.3",
     thinking: "high",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "endymion",
@@ -495,7 +455,6 @@ export const PARTICIPANT_PRESETS = [
     model: "openrouter/moonshotai/kimi-k3",
     thinking: "xhigh",
     skillsPolicy: "default",
-    toolsPolicy: "workspace-write",
   },
 
   // --- opencode model zoo (Norse names) — same models via OpenCode --------
@@ -507,7 +466,6 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed DeepSeek V4 Pro participant (via OpenRouter).",
     kind: "opencode",
     model: "openrouter/deepseek/deepseek-v4-pro",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "heimdall",
@@ -518,27 +476,24 @@ export const PARTICIPANT_PRESETS = [
     kind: "opencode",
     model: "openrouter/google/gemini-3.1-pro-preview",
     effort: "high",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "thor",
     id: "thor",
     name: "Thor",
-    label: "OpenCode Grok 4.5",
-    description: "OpenCode-backed xAI Grok 4.5 participant (via OpenRouter).",
+    label: "OpenCode Grok 4.6",
+    description: "OpenCode-backed xAI Grok 4.6 participant (via OpenRouter).",
     kind: "opencode",
-    model: "openrouter/x-ai/grok-4.5",
-    toolsPolicy: "workspace-write",
+    model: "openrouter/x-ai/grok-4.6",
   },
   {
     preset: "tyr",
     id: "tyr",
     name: "Tyr",
-    label: "OpenCode Qwen3.7 Max",
-    description: "OpenCode-backed Qwen3.7 Max participant (via OpenRouter).",
+    label: "OpenCode Qwen3.8 Max",
+    description: "OpenCode-backed Qwen3.8 Max participant (via OpenRouter).",
     kind: "opencode",
-    model: "openrouter/qwen/qwen3.7-max",
-    toolsPolicy: "workspace-write",
+    model: "openrouter/qwen/qwen3.8-max",
   },
   {
     preset: "vidar",
@@ -548,7 +503,6 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed Meta Llama 4 Maverick participant (via OpenRouter).",
     kind: "opencode",
     model: "openrouter/meta-llama/llama-4-maverick",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "njord",
@@ -558,7 +512,6 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed Mistral Large participant (via OpenRouter); sea/wind god for 'mistral'.",
     kind: "opencode",
     model: "openrouter/mistralai/mistral-large-2512",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "mimir",
@@ -568,7 +521,6 @@ export const PARTICIPANT_PRESETS = [
     description: "OpenCode-backed MiniMax M3 participant (via OpenRouter); god of wisdom for 'minimax'.",
     kind: "opencode",
     model: "openrouter/minimax/minimax-m3",
-    toolsPolicy: "workspace-write",
   },
   {
     preset: "mani",
@@ -578,7 +530,6 @@ export const PARTICIPANT_PRESETS = [
     description: "Norse moon god: OpenCode-backed Kimi K3 — Moonshot's 1M-context flagship reasoner (via OpenRouter). Runs at K3's default max thinking; the catalog defines no effort variants for it.",
     kind: "opencode",
     model: "openrouter/moonshotai/kimi-k3",
-    toolsPolicy: "workspace-write",
   },
 
   // --- Image generation (Codex backend → gpt-image-2) ---------------------
@@ -590,7 +541,6 @@ export const PARTICIPANT_PRESETS = [
     description: "Generates images with gpt-image-2 through your existing openai-codex login. Accepts optional reference images (`--image <path>`, repeatable) to edit/condition on. The model field is only the trigger model; the image backend is always gpt-image-2.",
     kind: "image",
     model: "gpt-5.5",
-    toolsPolicy: "workspace-write",
   },
 ];
 
@@ -622,7 +572,6 @@ export function participantFromPreset(ref, overrides = {}) {
     model: preset.model,
     effort: preset.effort,
     thinking: preset.thinking,
-    toolsPolicy: preset.toolsPolicy,
     skillsPolicy: preset.skillsPolicy,
   };
   delete participant.label;
@@ -642,11 +591,11 @@ export function participantFromPreset(ref, overrides = {}) {
 // wording as drift and re-flag the nudge. Stale description text is cosmetic (it never reaches the
 // packet); a wrong model is not.
 // Participants with no `preset`, or whose preset has since left the catalog, are left alone.
-export const PRESET_OWNED_FIELDS = ["kind", "model", "effort", "thinking", "toolsPolicy", "skillsPolicy"];
+export const PRESET_OWNED_FIELDS = ["kind", "model", "effort", "thinking", "skillsPolicy"];
 
 // normalizeParticipant() fills these in on save, so compare against the same defaults or every
 // non-pi participant reports a phantom skillsPolicy change.
-const PRESET_FIELD_DEFAULTS = { toolsPolicy: "workspace-write", skillsPolicy: "default" };
+const PRESET_FIELD_DEFAULTS = { skillsPolicy: "default" };
 
 function presetFieldValue(field, source) {
   const value = source?.[field];
